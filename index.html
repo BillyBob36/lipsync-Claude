@@ -904,11 +904,16 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
             const cfg = CONFIG;
             const smile = cfg.smileIntensity;
 
-            // En parlant : relacher le sourire vers 0 pour liberer le lipsync
+            // En parlant : garder sourire + sourcils acceleres x1.5, relacher lip roll
             if (isSpeaking) {
-                lerpMorph('Mouth_Smile_L', 0, 0.1);
-                lerpMorph('Mouth_Smile_R', 0, 0.1);
+                setMorph('Mouth_Smile_L', smile);
+                setMorph('Mouth_Smile_R', smile);
                 lerpMorph('Mouth_Roll_In_Lower', 0, 0.1);
+                const ts = elapsedTime * cfg.microSpeed * 1.5;
+                setMorph('Brow_Raise_Outer_L',
+                    Math.max(0, Math.sin(ts * 0.17 + 0.5)) * cfg.microBrowAmp);
+                setMorph('Brow_Raise_Outer_R',
+                    Math.max(0, Math.sin(ts * 0.13 + 2.1)) * cfg.microBrowAmp * 0.7);
                 return;
             }
 
