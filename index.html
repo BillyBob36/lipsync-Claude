@@ -315,7 +315,7 @@
             <div class="param-section-title">Lipsync - Transitions</div>
             <div class="param-row">
                 <label title="Vitesse d'ouverture des formes de bouche. Controle la rapidite avec laquelle la bouche atteint la forme du viseme actif. 0.1 = tres doux et lent. 0.35 = recommande ActorCore. 0.8 = quasi-instantane mais saccade.">Lerp Speed</label>
-                <input type="range" data-param="lerpSpeed" min="0.05" max="0.8" step="0.01" value="0.29">
+                <input type="range" data-param="lerpSpeed" min="0.05" max="2.0" step="0.01" value="0.29">
                 <span class="param-val">0.29</span>
             </div>
             <div class="param-row">
@@ -549,14 +549,14 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
         const CONFIG = {
             // ── Lipsync ──
             lerpSpeed: 0.29,
-            lerpDecay: 0.1,
-            resetToNeutral: 0.25,
-            maxIntensity: 0.7,
-            openMultiplier: 1.9,
-            tightMultiplier: 1.7,
+            lerpDecay: 0.59,
+            resetToNeutral: 0.5,
+            maxIntensity: 1.2,
+            openMultiplier: 2.2,
+            tightMultiplier: 1.9,
             jawBoost: 1.5,
             tongueScale: 0.4,
-            silenceThreshold: 0.05,
+            silenceThreshold: 0.08,
 
             // ── Idle: Blinks ──
             blinkIntervalMin: 1,
