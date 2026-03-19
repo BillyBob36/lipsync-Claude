@@ -621,9 +621,17 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
 
         // ── Three.js Setup ──
         const container = document.getElementById('canvas-container');
+        const MAX_W = 1920, MAX_H = 1080;
+        function cappedSize() {
+            return {
+                w: Math.min(window.innerWidth,  MAX_W),
+                h: Math.min(window.innerHeight, MAX_H),
+            };
+        }
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        const _cs = cappedSize();
+        renderer.setSize(_cs.w, _cs.h);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1));
         renderer.outputColorSpace = THREE.SRGBColorSpace;
         renderer.toneMapping = THREE.NoToneMapping;
         container.appendChild(renderer.domElement);
@@ -1371,9 +1379,14 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
                       .replace(/"/g, '&quot;').replace(/'/g, '&apos;');
         }
 
-        // ── Render Loop ──
-        function animate() {
+        // ── Render Loop (capped at 60 FPS) ──
+        const _fpsInterval = 1000 / 60;
+        let _lastFrameTime = 0;
+        function animate(timestamp) {
             requestAnimationFrame(animate);
+            const elapsed = timestamp - _lastFrameTime;
+            if (elapsed < _fpsInterval) return;
+            _lastFrameTime = timestamp - (elapsed % _fpsInterval);
             const dt = clock.getDelta();
             elapsedTime += dt;
 
@@ -1419,9 +1432,10 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
 
         // ── Resize ──
         window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
+            const cs = cappedSize();
+            camera.aspect = cs.w / cs.h;
             camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setSize(cs.w, cs.h);
         });
 
         // ── Chat UI ──
