@@ -29,7 +29,12 @@ http.createServer((req, res) => {
             res.end('Not found: ' + req.url);
             return;
         }
-        res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream' });
+        res.writeHead(200, {
+            'Content-Type': MIME[ext] || 'application/octet-stream',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0',
+        });
         res.end(data);
     });
 }).listen(PORT, () => {

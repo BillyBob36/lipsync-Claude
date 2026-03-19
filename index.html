@@ -315,18 +315,18 @@
             <div class="param-section-title">Lipsync - Transitions</div>
             <div class="param-row">
                 <label title="Vitesse d'ouverture des formes de bouche. Controle la rapidite avec laquelle la bouche atteint la forme du viseme actif. 0.1 = tres doux et lent. 0.35 = recommande ActorCore. 0.8 = quasi-instantane mais saccade.">Lerp Speed</label>
-                <input type="range" data-param="lerpSpeed" min="0.05" max="0.8" step="0.01" value="0.35">
-                <span class="param-val">0.35</span>
+                <input type="range" data-param="lerpSpeed" min="0.05" max="0.8" step="0.01" value="0.29">
+                <span class="param-val">0.29</span>
             </div>
             <div class="param-row">
                 <label title="Vitesse de fermeture quand un viseme devient inactif. Controle la rapidite du retour au neutre. Plus haut = bouche se ferme plus vite entre les syllabes. 0.15 = lent (bouche reste ouverte). 0.45 = recommande. 0.9 = fermeture tres agressive.">Lerp Decay</label>
-                <input type="range" data-param="lerpDecay" min="0.1" max="0.9" step="0.01" value="0.45">
-                <span class="param-val">0.45</span>
+                <input type="range" data-param="lerpDecay" min="0.05" max="0.9" step="0.01" value="0.1">
+                <span class="param-val">0.1</span>
             </div>
             <div class="param-row">
                 <label title="Force un retour a bouche fermee entre chaque shape key. 0 = comportement normal (lerp direct d'un viseme a l'autre). 1 = l'ancienne forme doit etre a 0 avant que la nouvelle s'ouvre, articulation tres percutante.">Reset Neutral</label>
-                <input type="range" data-param="resetToNeutral" min="0" max="1" step="0.05" value="0">
-                <span class="param-val">0</span>
+                <input type="range" data-param="resetToNeutral" min="0" max="1" step="0.05" value="0.25">
+                <span class="param-val">0.25</span>
             </div>
         </div>
 
@@ -334,18 +334,18 @@
             <div class="param-section-title">Lipsync - Intensite</div>
             <div class="param-row">
                 <label title="Multiplicateur global de toutes les formes de bouche. Compense la faiblesse des exports ActorCore en WebGL. Si la bouche marmonne = augmenter. Si exagere = baisser. 0.5 = tres subtil. 1.4 = recommande ActorCore. 2.5 = maximum debug.">Max Intensity</label>
-                <input type="range" data-param="maxIntensity" min="0.3" max="2.5" step="0.1" value="1.0">
-                <span class="param-val">1.0</span>
+                <input type="range" data-param="maxIntensity" min="0.3" max="2.5" step="0.1" value="0.7">
+                <span class="param-val">0.7</span>
             </div>
             <div class="param-row">
                 <label title="Multiplicateur specifique pour V_Open (bouche grande ouverte, voyelles A/AA). Controle separement l'amplitude des sons 'aaa'. 0.8 = discret. 1.6 = recommande. 3.0 = tres exagere, utile pour debug.">Open Multiplier</label>
-                <input type="range" data-param="openMultiplier" min="0.5" max="3.0" step="0.1" value="1.6">
-                <span class="param-val">1.6</span>
+                <input type="range" data-param="openMultiplier" min="0.5" max="3.0" step="0.1" value="1.9">
+                <span class="param-val">1.9</span>
             </div>
             <div class="param-row">
                 <label title="Multiplicateur pour V_Tight_O (bouche arrondie, voyelles O/U/I). Controle l'amplitude de la bouche en 'O'. 0.5 = discret. 1.2 = recommande. 2.0 = exagere.">Tight Multiplier</label>
-                <input type="range" data-param="tightMultiplier" min="0.5" max="2.5" step="0.1" value="1.4">
-                <span class="param-val">1.4</span>
+                <input type="range" data-param="tightMultiplier" min="0.5" max="2.5" step="0.1" value="1.7">
+                <span class="param-val">1.7</span>
             </div>
         </div>
 
@@ -353,8 +353,8 @@
             <div class="param-section-title">Lipsync - Machoire / Langue</div>
             <div class="param-row">
                 <label title="Boost supplementaire de la machoire sur les voyelles ouvertes (aa, O, E). Ajoute un V_Open extra au-dessus du viseme normal pour simuler l'ouverture naturelle de la machoire. 0.5 = subtil. 2.0 = recommande. 4.0 = grande ouverture.">Jaw Boost</label>
-                <input type="range" data-param="jawBoost" min="0.3" max="4.0" step="0.1" value="2.0">
-                <span class="param-val">2.0</span>
+                <input type="range" data-param="jawBoost" min="0.3" max="4.0" step="0.1" value="1.5">
+                <span class="param-val">1.5</span>
             </div>
             <div class="param-row">
                 <label title="Echelle des mouvements de langue (V_Tongue_*). Trop haut = langue sort de maniere excessive. 0.0 = pas de langue. 0.4 = recommande. 1.0 = maximum.">Tongue Scale</label>
@@ -402,18 +402,23 @@
             <div class="param-section-title">Idle - Micro-expressions</div>
             <div class="param-row">
                 <label title="Amplitude des micro-mouvements de bouche au repos (sourire, compression). 0 = visage fige.">Mouth Idle</label>
-                <input type="range" data-param="microMouthAmp" min="0.0" max="0.3" step="0.01" value="0.3">
-                <span class="param-val">0.3</span>
+                <input type="range" data-param="microMouthAmp" min="0.0" max="1.0" step="0.05" value="0.4">
+                <span class="param-val">0.4</span>
             </div>
             <div class="param-row">
                 <label title="Amplitude des mouvements de sourcils au repos. Donne un air vivant/curieux.">Brow Idle</label>
-                <input type="range" data-param="microBrowAmp" min="0.0" max="0.3" step="0.01" value="0.3">
-                <span class="param-val">0.3</span>
+                <input type="range" data-param="microBrowAmp" min="0.0" max="1.0" step="0.05" value="0.8">
+                <span class="param-val">0.8</span>
             </div>
             <div class="param-row">
                 <label title="Vitesse des cycles de micro-expressions. Plus haut = changements plus rapides et nerveux.">Micro Speed</label>
-                <input type="range" data-param="microSpeed" min="0.1" max="4.0" step="0.1" value="2.0">
-                <span class="param-val">2.0</span>
+                <input type="range" data-param="microSpeed" min="0.1" max="6.0" step="0.1" value="4.7">
+                <span class="param-val">4.7</span>
+            </div>
+            <div class="param-row">
+                <label title="Intensite du sourire permanent. 0 = neutre, 1 = sourire maximum.">Sourire</label>
+                <input type="range" data-param="smileIntensity" min="0" max="1" step="0.05" value="0.4">
+                <span class="param-val">0.4</span>
             </div>
         </div>
 
@@ -437,10 +442,23 @@
         </div>
 
         <div class="param-section">
+            <div class="param-section-title">Cheveux</div>
+            <div class="param-row">
+                <label title="Souplesse des cheveux. Bas = quasi-rigides. Haut = tres souples et legers.">Hair Flex</label>
+                <input type="range" data-param="hairFlex" min="0.05" max="1" step="0.05" value="1">
+                <span class="param-val">1</span>
+            </div>
+        </div>
+
+        <div class="param-section">
             <div class="param-section-title">Debug</div>
             <div class="param-row">
                 <label title="Affiche FPS, temps GPT, temps TTS Azure, et viseme actif en temps reel.">Show Perf</label>
                 <input type="checkbox" id="toggle-perf">
+            </div>
+            <div class="param-row">
+                <label title="Affiche le squelette (bones) de l'avatar en surimpression.">Show Bones</label>
+                <input type="checkbox" id="toggle-bones">
             </div>
         </div>
 
@@ -530,32 +548,36 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
         // ══════════════════════════════════════════════════════════
         const CONFIG = {
             // ── Lipsync ──
-            lerpSpeed: 0.35,
-            lerpDecay: 0.45,
-            resetToNeutral: 0,
-            maxIntensity: 1.0,
-            openMultiplier: 1.6,
-            tightMultiplier: 1.4,
-            jawBoost: 2.0,
+            lerpSpeed: 0.29,
+            lerpDecay: 0.1,
+            resetToNeutral: 0.25,
+            maxIntensity: 0.7,
+            openMultiplier: 1.9,
+            tightMultiplier: 1.7,
+            jawBoost: 1.5,
             tongueScale: 0.4,
             silenceThreshold: 0.05,
 
             // ── Idle: Blinks ──
-            blinkIntervalMin: 1.0,
-            blinkIntervalMax: 8.0,
+            blinkIntervalMin: 1,
+            blinkIntervalMax: 8,
             blinkCloseDuration: 60,
             blinkHoldDuration: 150,
             doubleBlink: 0.15,
 
             // ── Idle: Micro-expressions ──
-            microMouthAmp: 0.3,
-            microBrowAmp: 0.3,
-            microSpeed: 2.0,
+            microMouthAmp: 0.4,
+            microBrowAmp: 0.8,
+            microSpeed: 4.7,
+            smileIntensity: 0.4,
 
             // ── Idle: Breathing & head drift ──
             breathAmplitude: 0.15,
-            breathSpeed: 4.0,
+            breathSpeed: 4,
             headDriftAmp: 0.15,
+
+            // ── Hair ──
+            hairFlex: 1,
         };
 
         // ══════════════════════════════════════════════════════════
@@ -632,11 +654,9 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
         let elapsedTime = 0;
         let prevShapeKey = null;
 
-        // ── Hair Wiggle Bones ──
+        // ── Hair Wiggle Bones (spring-damper maison) ──
         const wiggleBones = [];
-        // Stocke la position locale (en espace parent) des bones racines
-        // pour bloquer toute translation parasite après le wiggle update
-        const hairRootLocalPos = new Map();
+        let skeletonHelper = null;
 
         // ── Wawa-Lipsync ──
         const lipsync = new Lipsync();
@@ -728,15 +748,24 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
         // Based on TalkingHead mood system
         // ══════════════════════════════════════════════════════════
         function updateMicroExpressions() {
-            if (!lipsyncMesh || isSpeaking) return;
-            const t = elapsedTime * CONFIG.microSpeed;
+            if (!lipsyncMesh) return;
             const cfg = CONFIG;
+            const smile = cfg.smileIntensity;
 
-            // Subtle resting smile (asymmetric for realism)
+            // Sourire permanent (actif meme en parlant)
+            if (isSpeaking) {
+                setMorph('Mouth_Smile_L', smile);
+                setMorph('Mouth_Smile_R', smile);
+                return;
+            }
+
+            const t = elapsedTime * cfg.microSpeed;
+
+            // Sourire + micro-expressions (asymmetric pour le realisme)
             setMorph('Mouth_Smile_L',
-                0.05 + Math.sin(t * 0.23 + 0.0) * cfg.microMouthAmp * 0.6);
+                smile + 0.05 + Math.sin(t * 0.23 + 0.0) * cfg.microMouthAmp * 0.6);
             setMorph('Mouth_Smile_R',
-                0.04 + Math.sin(t * 0.19 + 1.2) * cfg.microMouthAmp * 0.5);
+                smile + 0.04 + Math.sin(t * 0.19 + 1.2) * cfg.microMouthAmp * 0.5);
 
             // Lip compression (thinking micro-expression)
             const lipRoll = Math.max(0, Math.sin(t * 0.11 + 3.7)) * cfg.microMouthAmp * 0.4;
@@ -749,7 +778,7 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
                 Math.max(0, Math.sin(t * 0.13 + 2.1)) * cfg.microBrowAmp * 0.7);
 
             // Subtle cheek puff (very faint, adds life)
-            const cheek = Math.max(0, Math.sin(t * 0.07 + 5.0)) * 0.03;
+            const cheek = Math.max(0, Math.sin(t * 0.07 + 5.0)) * 0.05;
             setMorph('Cheek_Puff_L', cheek);
             setMorph('Cheek_Puff_R', cheek * 0.8);
         }
@@ -1063,8 +1092,9 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
                 }
             });
 
-            // ── Strip conflicting morph tracks from animations ──
-            // We manually control these shape keys for idle face & lipsync.
+            // ── Strip conflicting tracks from animations ──
+            // We manually control these shape keys for idle face & lipsync,
+            // AND the hair bones are driven by WiggleBone physics.
             // If the animation also has tracks for them, the mixer overwrites
             // our values every frame. Solution: remove those tracks.
             const manuallyControlledKeys = [
@@ -1079,12 +1109,31 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
                 ...ALL_VISEME_KEYS,
             ];
 
+            // Hair bones driven by spring physics — strip their position/quaternion/scale tracks
+            // Names are sanitized by GLTFLoader (dots removed)
+            const wiggleBoneNames = [
+                'hair001', 'hair002', 'hair003', 'hair004',
+                'Bone005', 'Bone009', 'Bone003', 'Bone001',
+                'Bone007', 'Bone008',
+            ];
+
             function stripConflictingTracks(clip) {
                 if (!clip) return;
                 const before = clip.tracks.length;
+
+                // Log quelques track names pour diagnostic
+                if (clip.tracks.length > 0) {
+                    console.log(`[Strip] Exemples de track names dans "${clip.name}":`);
+                    clip.tracks.slice(0, 5).forEach(t => console.log(`  → "${t.name}"`));
+                }
+
                 clip.tracks = clip.tracks.filter(track => {
                     // Track names look like "meshName.morphTargetInfluences[shapekeyName]"
-                    return !manuallyControlledKeys.some(key => track.name.includes(key));
+                    // or "boneName.quaternion" / "boneName.position" / "boneName.scale"
+                    if (manuallyControlledKeys.some(key => track.name.includes(key))) return false;
+                    // Strip hair bone tracks (position/quaternion/scale)
+                    if (wiggleBoneNames.some(bn => track.name.startsWith(bn + '.'))) return false;
+                    return true;
                 });
                 console.log(`Animation "${clip.name}": ${before} tracks -> ${clip.tracks.length} (removed ${before - clip.tracks.length} conflicting)`);
             }
@@ -1113,8 +1162,22 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
             // Init blink timer
             scheduleNextBlink();
 
+            // Diagnostic : lister TOUS les bones du modele pour trouver les vrais noms
+            console.log('[BONES] Liste de tous les bones du modele :');
+            model.traverse((child) => {
+                if (child.isBone) {
+                    const parentName = child.parent ? child.parent.name : 'none';
+                    console.log(`  [BONE] "${child.name}" (parent: "${parentName}")`);
+                }
+            });
+
             // Init wiggle bones sur les cheveux
             initWiggleBones(model);
+
+            // SkeletonHelper pour debug visuel des bones
+            skeletonHelper = new THREE.SkeletonHelper(model);
+            skeletonHelper.visible = false;
+            scene.add(skeletonHelper);
 
             setStatus('Pret');
         },
@@ -1207,77 +1270,100 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
         }
 
         // ══════════════════════════════════════════════════════════
-        // WIGGLE BONES — Physique de cheveux (cheveux_Baked uniquement)
-        // Structure :
-        //   hair.001 (L0) → Bone.005 (L1) → Bone.009 (L2)
-        //   hair.002 (L0) → Bone.003 (L1)
-        //   hair.003 (L0) → Bone.001 (L1)
-        //   hair.004 (L0) → Bone.007 (L1) → Bone.008 (L2)
+        // WIGGLE BONES — Librairie "wiggle" (WiggleBone)
+        //
+        // ARCHITECTURE :
+        // Les racines (L0 = hair001-004) sont des PIVOTS FIXES.
+        // Elles suivent la tête rigidement — pas de wiggle.
+        // Seuls les enfants (L1, L2) reçoivent WiggleBone.
+        //
+        //   CC_Base_Head (tête, bouge)
+        //     └── hair001 (L0, FIXE — suit la tête)
+        //           └── Bone005 (L1, WiggleBone) — dangle
+        //                 └── Bone009 (L2, WiggleBone souple) — dangle++
         // ══════════════════════════════════════════════════════════
-        function initWiggleBones(model) {
 
-            // Arbre des branches capillaires avec profondeur (level)
+        // Stocke les verrous de pose pour les racines L0
+        const hairRootLocks = [];
+
+        function initWiggleBones(model) {
+            // Noms sanitisés par GLTFLoader (points supprimés)
             const HAIR_BONES = [
-                // Branche 1
-                { name: 'hair.001', level: 0 },
-                { name: 'Bone.005', level: 1 },
-                { name: 'Bone.009', level: 2 },
-                // Branche 2
-                { name: 'hair.002', level: 0 },
-                { name: 'Bone.003', level: 1 },
-                // Branche 3
-                { name: 'hair.003', level: 0 },
-                { name: 'Bone.001', level: 1 },
-                // Branche 4
-                { name: 'hair.004', level: 0 },
-                { name: 'Bone.007', level: 1 },
-                { name: 'Bone.008', level: 2 },
+                { name: 'hair001', level: 0 },
+                { name: 'hair002', level: 0 },
+                { name: 'hair003', level: 0 },
+                { name: 'hair004', level: 0 },
+                { name: 'Bone005', level: 1 },
+                { name: 'Bone003', level: 1 },
+                { name: 'Bone001', level: 1 },
+                { name: 'Bone007', level: 1 },
+                { name: 'Bone009', level: 2 },
+                { name: 'Bone008', level: 2 },
             ];
 
-            // Paramètres par niveau de profondeur
-            // velocity (0→1) : vitesse de retour au repos. Plus haut = plus rigide.
-            // maxStretch (0→1) : élongation max. Plus haut = plus souple.
-            // L0 : racines — quasi-rigides, rotation seule
-            // L1 : niveau intermédiaire
-            // L2 : extrémités — très souples
+            // Paramètres de BASE (hairFlex=1). Interpolés vers rigide quand hairFlex baisse.
+            // velocity (0→1) : vitesse retour repos. Haut = rigide.
+            // maxStretch (0→1) : elongation max. Haut = souple.
             const LEVEL_PARAMS = [
-                { velocity: 0.9,  maxStretch: 0.02 }, // L0 – racines (quasi-rigides)
-                { velocity: 0.5,  maxStretch: 0.08 }, // L1
-                { velocity: 0.15, maxStretch: 0.15 }, // L2 – extrémités (très souples)
+                null,                                    // L0 – pivot fixe
+                { velocity: 0.15, maxStretch: 0.15 },   // L1 (flex=1)
+                { velocity: 0.05, maxStretch: 0.35 },   // L2 (flex=1)
             ];
 
             const report = [];
 
             for (const { name, level } of HAIR_BONES) {
                 const bone = model.getObjectByName(name);
-
                 if (!bone) {
-                    console.warn(`[WiggleBone] Bone "${name}" introuvable dans le modèle.`);
+                    console.warn(`[Wiggle] Bone "${name}" introuvable.`);
                     continue;
                 }
 
                 const params = LEVEL_PARAMS[level];
 
-                // WiggleBone modifie principalement la rotation (quaternion-based).
-                // La translation est contrainte via maxStretch.
-                // On verrouille aussi manuellement la position locale des racines.
-                const wb = new WiggleBone(bone, {
-                    velocity   : params.velocity,
-                    maxStretch : params.maxStretch,
-                });
-
-                wiggleBones.push(wb);
-
-                // Verrou de position pour les bones racines (L0)
-                if (level === 0) {
-                    hairRootLocalPos.set(bone, bone.position.clone());
+                // L0 : pivot fixe, pas de WiggleBone
+                if (!params) {
+                    hairRootLocks.push({
+                        bone,
+                        restQuat: bone.quaternion.clone(),
+                        restPos:  bone.position.clone(),
+                    });
+                    report.push(`  • ${name.padEnd(10)} L0  PIVOT FIXE`);
+                    continue;
                 }
 
+                const wb = new WiggleBone(bone, {
+                    velocity:   params.velocity,
+                    maxStretch: params.maxStretch,
+                });
+                // Stocker les params de base pour interpolation via hairFlex
+                wb._baseVelocity   = params.velocity;
+                wb._baseMaxStretch = params.maxStretch;
+                wiggleBones.push(wb);
                 report.push(`  • ${name.padEnd(10)} L${level}  velocity=${params.velocity}  maxStretch=${params.maxStretch}`);
             }
 
-            console.log(`[WiggleBone] ✅ ${wiggleBones.length} bones initialisés sur cheveux_Baked :`);
+            console.log(`[Wiggle] ✅ ${wiggleBones.length} WiggleBones + ${hairRootLocks.length} pivots fixes :`);
             report.forEach(line => console.log(line));
+        }
+
+        function updateWiggleBones() {
+            const flex = CONFIG.hairFlex;
+
+            // 1. Verrouiller les racines L0 (local transform = pose de repos)
+            for (const root of hairRootLocks) {
+                root.bone.position.copy(root.restPos);
+                root.bone.quaternion.copy(root.restQuat);
+            }
+
+            // 2. Interpoler les paramètres WiggleBone selon hairFlex
+            //    flex=0.05 → velocity≈0.95 maxStretch≈0  (quasi-rigide)
+            //    flex=1    → velocity et maxStretch à leurs valeurs de base (souples)
+            for (const wb of wiggleBones) {
+                wb.velocity   = 1 - flex * (1 - wb._baseVelocity);
+                wb.maxStretch = flex * wb._baseMaxStretch;
+                wb.update();
+            }
         }
 
         function escapeXml(str) {
@@ -1294,12 +1380,9 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
             if (mixer) mixer.update(dt);
 
             // Hair wiggle bones — après le mixer pour lire les bons world matrices
-            if (wiggleBones.length) {
-                wiggleBones.forEach(wb => wb.update());
-                // Verrouillage position locale des bones racines (translation constraint)
-                for (const [bone, restPos] of hairRootLocalPos) {
-                    bone.position.copy(restPos);
-                }
+            if (wiggleBones.length || hairRootLocks.length) {
+                scene.updateMatrixWorld(true);
+                updateWiggleBones();
             }
 
             // Lipsync (always runs — handles both speaking & silence reset)
@@ -1406,6 +1489,10 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
             PERF.showPerf = ev.target.checked;
             document.getElementById('perf-panel').style.display = ev.target.checked ? 'block' : 'none';
             document.getElementById('status').style.display = ev.target.checked ? 'none' : 'block';
+        });
+
+        document.getElementById('toggle-bones').addEventListener('change', (ev) => {
+            if (skeletonHelper) skeletonHelper.visible = ev.target.checked;
         });
 
         // ── API key inputs ──
