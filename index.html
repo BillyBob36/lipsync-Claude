@@ -594,16 +594,16 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
             'viseme_PP':  'V_Tight',
             'viseme_FF':  'V_Lip_Open',
             'viseme_TH':  'V_Dental_Lip',
-            'viseme_DD':  'V_Tight_O',
+            'viseme_DD':  'V_Tight-O',
             'viseme_kk':  'V_Explosive',
             'viseme_CH':  'V_Affricate',
             'viseme_SS':  'V_Wide',
-            'viseme_nn':  'V_Tight_O',
+            'viseme_nn':  'V_Tight-O',
             'viseme_RR':  'V_Lip_Open',
             'viseme_aa':  'V_Open',
             'viseme_E':   'V_Wide',
             'viseme_I':   'V_Wide',
-            'viseme_O':   'V_Tight_O',
+            'viseme_O':   'V_Tight-O',
             'viseme_U':   'V_Tight',
         };
 
@@ -895,7 +895,7 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
 
                         if (targetShapeKey === 'V_Open') {
                             targetIntensity = cfg.openMultiplier;
-                        } else if (targetShapeKey === 'V_Tight_O' || targetShapeKey === 'V_Tight-O') {
+                        } else if (targetShapeKey === 'V_Tight-O') {
                             targetIntensity = cfg.tightMultiplier;
                         } else if (targetShapeKey === 'V_Tight') {
                             targetIntensity = cfg.duckMultiplier;
