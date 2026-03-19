@@ -343,9 +343,14 @@
                 <span class="param-val">1.9</span>
             </div>
             <div class="param-row">
-                <label title="Multiplicateur pour V_Tight_O (bouche arrondie, voyelles O/U/I). Controle l'amplitude de la bouche en 'O'. 0.5 = discret. 1.2 = recommande. 2.0 = exagere.">Tight Multiplier</label>
-                <input type="range" data-param="tightMultiplier" min="0.5" max="2.5" step="0.1" value="1.7">
-                <span class="param-val">1.7</span>
+                <label title="Multiplicateur pour V_Tight_O (bouche arrondie, voyelles O). Controle l'amplitude de la bouche en rond. 0.5 = discret. 1.7 = recommande. 3.0 = tres exagere.">Round Multiplier</label>
+                <input type="range" data-param="tightMultiplier" min="0.5" max="3.0" step="0.1" value="2.2">
+                <span class="param-val">2.2</span>
+            </div>
+            <div class="param-row">
+                <label title="Multiplicateur pour V_Tight (levres pincees/canard, voyelles U et PP). Plus haut = bouche canard plus prononcee.">Duck Multiplier</label>
+                <input type="range" data-param="duckMultiplier" min="0.5" max="3.0" step="0.1" value="2.0">
+                <span class="param-val">2.0</span>
             </div>
         </div>
 
@@ -553,7 +558,8 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
             resetToNeutral: 0.5,
             maxIntensity: 1.2,
             openMultiplier: 2.2,
-            tightMultiplier: 1.9,
+            tightMultiplier: 2.2,
+            duckMultiplier: 2.0,
             jawBoost: 1.5,
             tongueScale: 0.4,
             silenceThreshold: 0.08,
@@ -888,16 +894,18 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
                         let targetIntensity = 1.0;
 
                         if (targetShapeKey === 'V_Open') {
-                            targetIntensity *= cfg.openMultiplier;
+                            targetIntensity = cfg.openMultiplier;
                         } else if (targetShapeKey === 'V_Tight_O' || targetShapeKey === 'V_Tight-O') {
-                            targetIntensity *= cfg.tightMultiplier;
+                            targetIntensity = cfg.tightMultiplier;
+                        } else if (targetShapeKey === 'V_Tight') {
+                            targetIntensity = cfg.duckMultiplier;
                         } else if (targetShapeKey.startsWith('V_Tongue_')) {
-                            targetIntensity *= cfg.tongueScale;
+                            targetIntensity = cfg.tongueScale;
                         } else {
-                            targetIntensity *= cfg.maxIntensity;
+                            targetIntensity = cfg.maxIntensity;
                         }
 
-                        targetIntensity = Math.min(targetIntensity, cfg.maxIntensity);
+                        targetIntensity = Math.min(targetIntensity, 3.0);
 
                         // Reset to neutral: si on change de shape key, on attend
                         // que l'ancienne soit retombee avant d'ouvrir la nouvelle.
@@ -921,7 +929,6 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
 
                 // 3. MACHOIRE PROCEDURALE — boost sur voyelles ouvertes
                 const isOpenVowel = currentViseme === 'viseme_aa' ||
-                                    currentViseme === 'viseme_O' ||
                                     currentViseme === 'viseme_E';
                 if (isOpenVowel) {
                     const jawIdx = morphDict['V_Open'];
