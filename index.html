@@ -1145,11 +1145,16 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
                     console.log('Camera found:', child.name);
                 }
             });
-            // Store initial camera world position as target A
+            // Detach camera from GLTF parent → add directly to scene so we can move it freely
             if (camera) {
                 camera.updateWorldMatrix(true, false);
                 camera.getWorldPosition(camPosA);
                 camera.getWorldQuaternion(camQuatA);
+                // Re-parent to scene root at world position
+                if (camera.parent) camera.parent.remove(camera);
+                camera.position.copy(camPosA);
+                camera.quaternion.copy(camQuatA);
+                scene.add(camera);
             }
 
             if (camera2Node) {
