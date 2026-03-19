@@ -1,0 +1,47 @@
+// ══════════════════════════════════════════════════════════
+// VISEME CONFIG — Mapping sonorite → composition de shape keys
+// Chaque viseme = tableau de { shape, intensity }
+// Telecharger ce fichier pour sauvegarder / restaurer le mapping
+// ══════════════════════════════════════════════════════════
+export const VISEME_DEFAULTS = {
+    viseme_sil: [],
+    viseme_PP:  [{ shape: 'V_Tight', intensity: 1.0 }],
+    viseme_FF:  [{ shape: 'V_Lip_Open', intensity: 1.0 }],
+    viseme_TH:  [{ shape: 'V_Dental_Lip', intensity: 1.0 }],
+    viseme_DD:  [{ shape: 'V_Tight-O', intensity: 0.8 }],
+    viseme_kk:  [{ shape: 'V_Explosive', intensity: 1.0 }],
+    viseme_CH:  [{ shape: 'V_Affricate', intensity: 1.0 }],
+    viseme_SS:  [{ shape: 'V_Wide', intensity: 0.9 }],
+    viseme_nn:  [{ shape: 'V_Tight-O', intensity: 0.6 }],
+    viseme_RR:  [{ shape: 'V_Lip_Open', intensity: 0.8 }],
+    viseme_aa:  [{ shape: 'V_Open', intensity: 1.0 }],
+    viseme_E:   [{ shape: 'V_Wide', intensity: 1.0 }],
+    viseme_I:   [{ shape: 'V_Wide', intensity: 0.7 }, { shape: 'V_Tight', intensity: 0.3 }],
+    viseme_O:   [{ shape: 'V_Tight-O', intensity: 1.0 }],
+    viseme_U:   [{ shape: 'V_Tight', intensity: 1.0 }],
+};
+
+export const ALL_SHAPE_KEYS = [
+    'V_Open', 'V_Tight-O', 'V_Tight', 'V_Affricate',
+    'V_Tight_O', 'V_Wide', 'V_Lip_Open', 'V_Dental_Lip', 'V_Explosive',
+    'V_Tongue_Raise', 'V_Tongue_Out', 'V_Tongue_Lower',
+    'V_Tongue_Curl-U', 'V_Tongue_Curl-D'
+];
+
+export const VISEME_LABELS = {
+    viseme_sil: 'Silence',
+    viseme_PP:  'PP / BB / MM',
+    viseme_FF:  'FF / VV',
+    viseme_TH:  'TH (the)',
+    viseme_DD:  'DD / TT / NN',
+    viseme_kk:  'KK / GG',
+    viseme_CH:  'CH / JJ / SH',
+    viseme_SS:  'SS / ZZ',
+    viseme_nn:  'NN (nasal)',
+    viseme_RR:  'RR / LL',
+    viseme_aa:  'AA (papa)',
+    viseme_E:   'E (the)',
+    viseme_I:   'I (si)',
+    viseme_O:   'O (mot)',
+    viseme_U:   'U (ou)',
+};

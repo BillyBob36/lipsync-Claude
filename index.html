@@ -134,7 +134,7 @@
             position: fixed;
             top: 60px;
             left: 16px;
-            width: 320px;
+            width: 380px;
             max-height: calc(100vh - 80px);
             overflow-y: auto;
             z-index: 20;
@@ -157,6 +157,129 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
+
+        /* ── Tabs ── */
+        .settings-tabs {
+            display: flex;
+            gap: 0;
+            margin-bottom: 14px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .settings-tab {
+            flex: 1;
+            padding: 8px 0;
+            text-align: center;
+            font-size: 11px;
+            font-weight: 600;
+            color: rgba(255,255,255,0.4);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: color 0.2s, border-color 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: none;
+            border-top: none; border-left: none; border-right: none;
+            font-family: inherit;
+        }
+        .settings-tab:hover { color: rgba(255,255,255,0.7); }
+        .settings-tab.active {
+            color: #5b9bf5;
+            border-bottom-color: #5b9bf5;
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* ── Viseme Editor ── */
+        .viseme-item {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 8px;
+            padding: 8px 10px;
+            margin-bottom: 8px;
+        }
+        .viseme-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 4px;
+        }
+        .viseme-label {
+            flex: 1;
+            font-size: 11px;
+            font-weight: 600;
+            color: #e0e0e0;
+        }
+        .viseme-id {
+            font-size: 9px;
+            color: rgba(255,255,255,0.3);
+            font-family: 'Consolas', monospace;
+        }
+        .viseme-preview-btn {
+            width: 22px; height: 22px;
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.06);
+            color: #ccc; font-size: 11px;
+            cursor: pointer; display: flex;
+            align-items: center; justify-content: center;
+            transition: background 0.15s;
+            padding: 0;
+        }
+        .viseme-preview-btn:hover { background: rgba(59,130,246,0.4); }
+        .viseme-preview-btn.active { background: rgba(59,130,246,0.6); color: #fff; }
+        .shape-row {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-top: 4px;
+        }
+        .shape-row select {
+            flex: 1.2;
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 4px;
+            padding: 3px 4px;
+            color: #e0e0e0;
+            font-size: 10px;
+            font-family: 'Consolas', monospace;
+            outline: none;
+        }
+        .shape-row input[type="range"] {
+            flex: 1;
+            height: 3px;
+        }
+        .shape-row .shape-val {
+            color: #5b9bf5;
+            font-size: 10px;
+            font-family: 'Consolas', monospace;
+            min-width: 28px;
+            text-align: right;
+        }
+        .shape-row .shape-remove {
+            width: 18px; height: 18px;
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,80,80,0.15);
+            color: #f87171; font-size: 12px;
+            cursor: pointer; display: flex;
+            align-items: center; justify-content: center;
+            padding: 0; line-height: 1;
+        }
+        .shape-row .shape-remove:hover { background: rgba(255,80,80,0.4); }
+        .viseme-add-btn {
+            display: inline-flex;
+            align-items: center; gap: 3px;
+            margin-top: 4px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            border: 1px dashed rgba(255,255,255,0.15);
+            background: none;
+            color: rgba(255,255,255,0.4);
+            font-size: 10px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .viseme-add-btn:hover { color: #5b9bf5; border-color: rgba(59,130,246,0.4); }
 
         .param-section {
             margin-bottom: 14px;
@@ -295,7 +418,7 @@
     <div id="settings-panel">
         <h3>Tuning Avatar</h3>
 
-        <!-- ── API KEYS ── -->
+        <!-- ── API KEYS (always visible above tabs) ── -->
         <div class="param-section">
             <div class="param-section-title">Cles API (stockees localement)</div>
             <div class="param-row">
@@ -309,6 +432,15 @@
                 <span class="api-status missing" id="status-gpt-key">&#10007;</span>
             </div>
         </div>
+
+        <!-- ── TABS ── -->
+        <div class="settings-tabs">
+            <button class="settings-tab active" data-tab="tab-tuning">Tuning</button>
+            <button class="settings-tab" data-tab="tab-visemes">Visemes</button>
+        </div>
+
+        <!-- ══ TAB 1: TUNING ══ -->
+        <div id="tab-tuning" class="tab-content active">
 
         <!-- ── LIPSYNC ── -->
         <div class="param-section">
@@ -470,8 +602,20 @@
         <div class="settings-actions">
             <button id="btn-replay">Rejouer</button>
             <button id="btn-reset">Reset</button>
-            <button id="btn-copy" class="primary">Copier</button>
+            <button id="btn-dl-tuning" class="primary">Telecharger</button>
         </div>
+
+        </div><!-- /tab-tuning -->
+
+        <!-- ══ TAB 2: VISEMES ══ -->
+        <div id="tab-visemes" class="tab-content">
+            <div id="viseme-editor"></div>
+            <div class="settings-actions" style="margin-top:10px;">
+                <button id="btn-reset-visemes">Reset</button>
+                <button id="btn-dl-visemes" class="primary">Telecharger</button>
+            </div>
+        </div><!-- /tab-visemes -->
+
     </div>
     <div id="copy-toast">Config copiee !</div>
     <div id="perf-panel" style="display:none;position:fixed;top:16px;right:16px;z-index:20;background:rgba(0,0,0,0.75);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px 14px;font-family:Consolas,monospace;font-size:11px;color:rgba(255,255,255,0.7);min-width:200px;pointer-events:none;">
@@ -498,7 +642,9 @@
             "three": "https://cdn.jsdelivr.net/npm/three@0.167.1/build/three.module.js",
             "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.167.1/examples/jsm/",
             "wawa-lipsync": "./wawa-lipsync.es.js",
-            "wiggle": "https://cdn.jsdelivr.net/npm/wiggle/+esm"
+            "wiggle": "https://cdn.jsdelivr.net/npm/wiggle/+esm",
+            "tuning-config": "./tuning-config.js",
+            "viseme-config": "./viseme-config.js"
         }
     }
     </script>
@@ -508,6 +654,8 @@
         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
         import { Lipsync } from 'wawa-lipsync';
         import { WiggleBone } from 'wiggle';
+        import { TUNING_DEFAULTS } from 'tuning-config';
+        import { VISEME_DEFAULTS, ALL_SHAPE_KEYS, VISEME_LABELS } from 'viseme-config';
 
         // ── Azure TTS Config ──
         let SPEECH_KEY = localStorage.getItem('avatar_speech_key') || '';
@@ -549,70 +697,21 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
         }
 
         // ══════════════════════════════════════════════════════════
-        // CONFIGURATION GLOBALE (lipsync + idle)
+        // CONFIGURATION GLOBALE (from tuning-config.js)
         // ══════════════════════════════════════════════════════════
-        const CONFIG = {
-            // ── Lipsync ──
-            lerpSpeed: 0.29,
-            lerpDecay: 0.59,
-            resetToNeutral: 0.5,
-            maxIntensity: 1.2,
-            openMultiplier: 2.2,
-            tightMultiplier: 2.2,
-            duckMultiplier: 2.0,
-            jawBoost: 1.5,
-            tongueScale: 0.4,
-            silenceThreshold: 0.08,
-
-            // ── Idle: Blinks ──
-            blinkIntervalMin: 1,
-            blinkIntervalMax: 8,
-            blinkCloseDuration: 60,
-            blinkHoldDuration: 150,
-            doubleBlink: 0.15,
-
-            // ── Idle: Micro-expressions ──
-            microMouthAmp: 0.4,
-            microBrowAmp: 0.8,
-            microSpeed: 4.7,
-            smileIntensity: 0.4,
-
-            // ── Idle: Breathing & head drift ──
-            breathAmplitude: 0.15,
-            breathSpeed: 4,
-            headDriftAmp: 0.15,
-
-            // ── Hair ──
-            hairFlex: 1,
-        };
+        const CONFIG = { ...TUNING_DEFAULTS };
 
         // ══════════════════════════════════════════════════════════
-        // VISEME MAPPING (1 shape key per viseme)
+        // VISEME MAPPING (from viseme-config.js) — multi-shape per viseme
+        // Runtime copy: VISEME_MAP[visemeId] = [{ shape, intensity }, ...]
         // ══════════════════════════════════════════════════════════
-        const visemeToShapeKey = {
-            'viseme_sil': null,
-            'viseme_PP':  'V_Tight',
-            'viseme_FF':  'V_Lip_Open',
-            'viseme_TH':  'V_Dental_Lip',
-            'viseme_DD':  'V_Tight-O',
-            'viseme_kk':  'V_Explosive',
-            'viseme_CH':  'V_Affricate',
-            'viseme_SS':  'V_Wide',
-            'viseme_nn':  'V_Tight-O',
-            'viseme_RR':  'V_Lip_Open',
-            'viseme_aa':  'V_Open',
-            'viseme_E':   'V_Wide',
-            'viseme_I':   'V_Wide',
-            'viseme_O':   'V_Tight-O',
-            'viseme_U':   'V_Tight',
-        };
-
-        const ALL_VISEME_KEYS = [
-            'V_Open', 'V_Tight-O', 'V_Tight', 'V_Affricate',
-            'V_Tight_O', 'V_Wide', 'V_Lip_Open', 'V_Dental_Lip', 'V_Explosive',
-            'V_Tongue_Raise', 'V_Tongue_Out', 'V_Tongue_Lower',
-            'V_Tongue_Curl-U', 'V_Tongue_Curl-D'
-        ];
+        const VISEME_MAP = {};
+        function resetVisemeMap() {
+            for (const [k, v] of Object.entries(VISEME_DEFAULTS)) {
+                VISEME_MAP[k] = v.map(s => ({ ...s }));
+            }
+        }
+        resetVisemeMap();
 
         // Shape keys used by idle animations (manually controlled, not by mixer)
         // Head movement is done via bone rotation, not shape keys.
@@ -862,9 +961,9 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
         }
 
         // ══════════════════════════════════════════════════════════
-        // LIPSYNC (aggressive ActorCore config)
+        // LIPSYNC — multi-shape per viseme (from VISEME_MAP)
         // 1. Reset all viseme shapes toward 0
-        // 2. Apply only the active viseme with per-type boost
+        // 2. Apply all shapes of the active viseme
         // 3. Jaw procedural boost on open vowels
         // ══════════════════════════════════════════════════════════
         function applyLipsync() {
@@ -874,10 +973,10 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
             if (isSpeaking) {
                 lipsync.processAudio();
                 const currentViseme = lipsync.viseme;
-                const targetShapeKey = visemeToShapeKey[currentViseme];
+                const shapes = VISEME_MAP[currentViseme] || [];
 
                 // 1. RESET — fermeture rapide de tous les visemes
-                for (const key of ALL_VISEME_KEYS) {
+                for (const key of ALL_SHAPE_KEYS) {
                     const idx = morphDict[key];
                     if (idx === undefined) continue;
                     const current = lipsyncMesh.morphTargetInfluences[idx] || 0;
@@ -888,44 +987,15 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
                     }
                 }
 
-                // 2. VISEME ACTIF — booste par type
-                if (targetShapeKey) {
-                    const idx = morphDict[targetShapeKey];
-                    if (idx !== undefined) {
-                        let targetIntensity = 1.0;
-
-                        if (targetShapeKey === 'V_Open') {
-                            targetIntensity = cfg.openMultiplier;
-                        } else if (targetShapeKey === 'V_Tight-O') {
-                            targetIntensity = cfg.tightMultiplier;
-                        } else if (targetShapeKey === 'V_Tight') {
-                            targetIntensity = cfg.duckMultiplier;
-                        } else if (targetShapeKey.startsWith('V_Tongue_')) {
-                            targetIntensity = cfg.tongueScale;
-                        } else {
-                            targetIntensity = cfg.maxIntensity;
-                        }
-
-                        targetIntensity = Math.min(targetIntensity, 3.0);
-
-                        // Reset to neutral: si on change de shape key, on attend
-                        // que l'ancienne soit retombee avant d'ouvrir la nouvelle.
-                        // resetToNeutral=0 → aucun effet. 1 → passage obligatoire par 0.
-                        if (cfg.resetToNeutral > 0 && prevShapeKey && prevShapeKey !== targetShapeKey) {
-                            const prevIdx = morphDict[prevShapeKey];
-                            if (prevIdx !== undefined) {
-                                const prevInfluence = lipsyncMesh.morphTargetInfluences[prevIdx] || 0;
-                                const gate = 1.0 - prevInfluence * cfg.resetToNeutral;
-                                targetIntensity *= Math.max(0, gate);
-                            }
-                        }
-
-                        const current = lipsyncMesh.morphTargetInfluences[idx] || 0;
-                        lipsyncMesh.morphTargetInfluences[idx] = THREE.MathUtils.lerp(
-                            current, targetIntensity, cfg.lerpSpeed
-                        );
-                    }
-                    prevShapeKey = targetShapeKey;
+                // 2. VISEME ACTIF — appliquer chaque shape de la composition
+                for (const { shape, intensity } of shapes) {
+                    const idx = morphDict[shape];
+                    if (idx === undefined) continue;
+                    const targetIntensity = Math.min(intensity * cfg.maxIntensity, 3.0);
+                    const current = lipsyncMesh.morphTargetInfluences[idx] || 0;
+                    lipsyncMesh.morphTargetInfluences[idx] = THREE.MathUtils.lerp(
+                        current, targetIntensity, cfg.lerpSpeed
+                    );
                 }
 
                 // 3. MACHOIRE PROCEDURALE — boost sur voyelles ouvertes
@@ -935,7 +1005,7 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
                     const jawIdx = morphDict['V_Open'];
                     if (jawIdx !== undefined) {
                         const current = lipsyncMesh.morphTargetInfluences[jawIdx] || 0;
-                        const jawTarget = Math.min(cfg.jawBoost, cfg.maxIntensity);
+                        const jawTarget = Math.min(cfg.jawBoost, 3.0);
                         lipsyncMesh.morphTargetInfluences[jawIdx] = THREE.MathUtils.lerp(
                             current, jawTarget, 0.4
                         );
@@ -944,7 +1014,7 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
 
             } else {
                 // Silence: reset all viseme keys
-                for (const key of ALL_VISEME_KEYS) {
+                for (const key of ALL_SHAPE_KEYS) {
                     const idx = morphDict[key];
                     if (idx === undefined) continue;
                     const current = lipsyncMesh.morphTargetInfluences[idx] || 0;
@@ -1122,7 +1192,7 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
                 'Eye_Blink', 'Eye_Blink_L', 'Eye_Blink_R',
                 'Eye_L_Look_Down', 'Eye_R_Look_Down',
                 // All viseme shape keys (controlled by lipsync)
-                ...ALL_VISEME_KEYS,
+                ...ALL_SHAPE_KEYS,
             ];
 
             // Hair bones driven by spring physics — strip their position/quaternion/scale tracks
@@ -1506,6 +1576,16 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
             settingsToggle.classList.toggle('open');
         });
 
+        // ── Tabs ──
+        settingsPanel.querySelectorAll('.settings-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                settingsPanel.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
+                settingsPanel.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById(tab.dataset.tab).classList.add('active');
+            });
+        });
+
         // Toggle perf panel
         document.getElementById('toggle-perf').addEventListener('change', (ev) => {
             PERF.showPerf = ev.target.checked;
@@ -1544,9 +1624,10 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
             updateApiKeyStatus();
         });
 
-        // Connect all sliders to CONFIG
-        settingsPanel.querySelectorAll('input[type="range"]').forEach(slider => {
+        // Connect all tuning sliders to CONFIG
+        document.getElementById('tab-tuning').querySelectorAll('input[type="range"]').forEach(slider => {
             const param = slider.dataset.param;
+            if (!param) return;
             const valSpan = slider.nextElementSibling;
             slider.addEventListener('input', () => {
                 const v = parseFloat(slider.value);
@@ -1561,25 +1642,203 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
             await playAudioWithLipsync(lastAudioUrl);
         });
 
-        // Reset all to defaults
+        // Reset tuning to defaults
         document.getElementById('btn-reset').addEventListener('click', () => {
             Object.assign(CONFIG, DEFAULTS);
-            settingsPanel.querySelectorAll('input[type="range"]').forEach(slider => {
+            document.getElementById('tab-tuning').querySelectorAll('input[type="range"]').forEach(slider => {
                 const param = slider.dataset.param;
+                if (!param || CONFIG[param] === undefined) return;
                 slider.value = CONFIG[param];
                 slider.nextElementSibling.textContent =
                     CONFIG[param].toFixed(2).replace(/\.?0+$/, '') || '0';
             });
         });
 
-        // Copy config to clipboard
-        document.getElementById('btn-copy').addEventListener('click', () => {
-            const configStr = JSON.stringify(CONFIG, null, 4);
-            navigator.clipboard.writeText(configStr).then(() => {
-                const toast = document.getElementById('copy-toast');
-                toast.classList.add('show');
-                setTimeout(() => toast.classList.remove('show'), 1500);
+        // ── Download helpers ──
+        function downloadFile(filename, content) {
+            const blob = new Blob([content], { type: 'application/javascript' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(a.href);
+            const toast = document.getElementById('copy-toast');
+            toast.textContent = filename + ' telecharge !';
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 1500);
+        }
+
+        // Download tuning-config.js
+        document.getElementById('btn-dl-tuning').addEventListener('click', () => {
+            const lines = [
+                '// tuning-config.js',
+                'export const TUNING_DEFAULTS = ' + JSON.stringify(CONFIG, null, 4) + ';',
+            ];
+            downloadFile('tuning-config.js', lines.join('\n'));
+        });
+
+        // ══════════════════════════════════════════════════════════
+        // VISEME EDITOR (Tab 2)
+        // ══════════════════════════════════════════════════════════
+        let previewingViseme = null;
+
+        function buildVisemeEditor() {
+            const container = document.getElementById('viseme-editor');
+            container.innerHTML = '';
+
+            for (const visemeId of Object.keys(VISEME_MAP)) {
+                const item = document.createElement('div');
+                item.className = 'viseme-item';
+                item.dataset.viseme = visemeId;
+
+                // Header
+                const header = document.createElement('div');
+                header.className = 'viseme-header';
+
+                const label = document.createElement('span');
+                label.className = 'viseme-label';
+                label.textContent = VISEME_LABELS[visemeId] || visemeId;
+
+                const idSpan = document.createElement('span');
+                idSpan.className = 'viseme-id';
+                idSpan.textContent = visemeId;
+
+                const previewBtn = document.createElement('button');
+                previewBtn.className = 'viseme-preview-btn';
+                previewBtn.textContent = '\u25B6';
+                previewBtn.title = 'Preview sur avatar';
+                previewBtn.addEventListener('mousedown', () => startPreview(visemeId, previewBtn));
+                previewBtn.addEventListener('mouseup', stopPreview);
+                previewBtn.addEventListener('mouseleave', stopPreview);
+
+                header.append(label, idSpan, previewBtn);
+                item.appendChild(header);
+
+                // Shape rows container
+                const shapesDiv = document.createElement('div');
+                shapesDiv.className = 'viseme-shapes';
+                item.appendChild(shapesDiv);
+
+                // Render existing shapes
+                renderShapeRows(visemeId, shapesDiv);
+
+                // Add shape button
+                const addBtn = document.createElement('button');
+                addBtn.className = 'viseme-add-btn';
+                addBtn.innerHTML = '+ shape';
+                addBtn.addEventListener('click', () => {
+                    VISEME_MAP[visemeId].push({ shape: ALL_SHAPE_KEYS[0], intensity: 1.0 });
+                    renderShapeRows(visemeId, shapesDiv);
+                });
+                item.appendChild(addBtn);
+
+                container.appendChild(item);
+            }
+        }
+
+        function renderShapeRows(visemeId, shapesDiv) {
+            shapesDiv.innerHTML = '';
+            const shapes = VISEME_MAP[visemeId];
+
+            shapes.forEach((entry, i) => {
+                const row = document.createElement('div');
+                row.className = 'shape-row';
+
+                // Shape key select
+                const sel = document.createElement('select');
+                for (const sk of ALL_SHAPE_KEYS) {
+                    const opt = document.createElement('option');
+                    opt.value = sk;
+                    opt.textContent = sk;
+                    if (sk === entry.shape) opt.selected = true;
+                    sel.appendChild(opt);
+                }
+                sel.addEventListener('change', () => {
+                    entry.shape = sel.value;
+                });
+
+                // Intensity slider
+                const slider = document.createElement('input');
+                slider.type = 'range';
+                slider.min = '0';
+                slider.max = '3';
+                slider.step = '0.05';
+                slider.value = entry.intensity;
+
+                const valSpan = document.createElement('span');
+                valSpan.className = 'shape-val';
+                valSpan.textContent = entry.intensity.toFixed(2);
+
+                slider.addEventListener('input', () => {
+                    entry.intensity = parseFloat(slider.value);
+                    valSpan.textContent = entry.intensity.toFixed(2);
+                });
+
+                // Remove button
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'shape-remove';
+                removeBtn.textContent = '\u00D7';
+                removeBtn.addEventListener('click', () => {
+                    shapes.splice(i, 1);
+                    renderShapeRows(visemeId, shapesDiv);
+                });
+
+                row.append(sel, slider, valSpan, removeBtn);
+                shapesDiv.appendChild(row);
             });
+        }
+
+        // ── Preview: apply viseme shapes directly to avatar ──
+        function startPreview(visemeId, btn) {
+            if (!lipsyncMesh) return;
+            previewingViseme = visemeId;
+            // Reset all shape keys first
+            for (const key of ALL_SHAPE_KEYS) {
+                const idx = morphDict[key];
+                if (idx !== undefined) lipsyncMesh.morphTargetInfluences[idx] = 0;
+            }
+            // Apply this viseme's composition
+            const shapes = VISEME_MAP[visemeId] || [];
+            for (const { shape, intensity } of shapes) {
+                const idx = morphDict[shape];
+                if (idx !== undefined) {
+                    lipsyncMesh.morphTargetInfluences[idx] = Math.min(intensity * CONFIG.maxIntensity, 3.0);
+                }
+            }
+            btn.classList.add('active');
+        }
+
+        function stopPreview() {
+            if (!lipsyncMesh || !previewingViseme) return;
+            previewingViseme = null;
+            for (const key of ALL_SHAPE_KEYS) {
+                const idx = morphDict[key];
+                if (idx !== undefined) lipsyncMesh.morphTargetInfluences[idx] = 0;
+            }
+            document.querySelectorAll('.viseme-preview-btn.active').forEach(b => b.classList.remove('active'));
+        }
+
+        // Build the editor
+        buildVisemeEditor();
+
+        // Reset visemes to defaults
+        document.getElementById('btn-reset-visemes').addEventListener('click', () => {
+            resetVisemeMap();
+            buildVisemeEditor();
+        });
+
+        // Download viseme-config.js
+        document.getElementById('btn-dl-visemes').addEventListener('click', () => {
+            const mapStr = JSON.stringify(VISEME_MAP, null, 4);
+            const lines = [
+                '// viseme-config.js',
+                'export const VISEME_DEFAULTS = ' + mapStr + ';',
+                '',
+                'export const ALL_SHAPE_KEYS = ' + JSON.stringify(ALL_SHAPE_KEYS) + ';',
+                '',
+                'export const VISEME_LABELS = ' + JSON.stringify(VISEME_LABELS, null, 4) + ';',
+            ];
+            downloadFile('viseme-config.js', lines.join('\n'));
         });
     </script>
 </body>

@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(__NEW_LINE_4cb19bc1f51b0639__ sed:*)",
+      "Bash(__NEW_LINE_78da28dba730359c__ sed:*)"
+    ]
+  }
+}
