@@ -767,6 +767,10 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
         let elapsedTime = 0;
         let prevShapeKey = null;
 
+        // ── Viseme Preview Mode ──
+        let visemePreviewMode = false;
+        const activePreviewVisemes = new Set();
+
         // ── Hair Wiggle Bones (spring-damper maison) ──
         const wiggleBones = [];
         let skeletonHelper = null;
@@ -1468,22 +1472,24 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
             const dt = clock.getDelta();
             elapsedTime += dt;
 
-            if (mixer) mixer.update(dt);
+            if (mixer && !visemePreviewMode) mixer.update(dt);
 
             // Hair wiggle bones — après le mixer pour lire les bons world matrices
-            if (wiggleBones.length || hairRootLocks.length) {
+            if ((wiggleBones.length || hairRootLocks.length) && !visemePreviewMode) {
                 scene.updateMatrixWorld(true);
                 updateWiggleBones();
             }
 
-            // Lipsync (always runs — handles both speaking & silence reset)
-            applyLipsync();
+            if (!visemePreviewMode) {
+                // Lipsync (always runs — handles both speaking & silence reset)
+                applyLipsync();
 
-            // Idle face animations (blink always, others only when not speaking)
-            updateBlink();
-            updateMicroExpressions();
-            updateBreathing();
-            updateHeadDrift();
+                // Idle face animations (blink always, others only when not speaking)
+                updateBlink();
+                updateMicroExpressions();
+                updateBreathing();
+                updateHeadDrift();
+            }
 
             renderer.render(scene, camera);
 
@@ -1576,6 +1582,28 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
             settingsToggle.classList.toggle('open');
         });
 
+        // ── Viseme Preview Mode (shared state) ──
+        // (visemePreviewMode et activePreviewVisemes declares en haut avec les variables d'etat)
+
+        function enterVisemeMode() {
+            visemePreviewMode = true;
+            // Zoom camera: avance de moitie de la distance avatar-camera
+            if (camera) {
+                camera.position.z *= 0.5;
+                camera.updateProjectionMatrix();
+            }
+        }
+
+        function exitVisemeMode() {
+            visemePreviewMode = false;
+            stopAllPreviews();
+            // Retour camera
+            if (camera) {
+                camera.position.z *= 2.0;
+                camera.updateProjectionMatrix();
+            }
+        }
+
         // ── Tabs ──
         settingsPanel.querySelectorAll('.settings-tab').forEach(tab => {
             tab.addEventListener('click', () => {
@@ -1583,8 +1611,20 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
                 settingsPanel.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
                 tab.classList.add('active');
                 document.getElementById(tab.dataset.tab).classList.add('active');
+                if (tab.dataset.tab === 'tab-visemes') {
+                    enterVisemeMode();
+                } else {
+                    exitVisemeMode();
+                }
             });
         });
+
+        // Quand on ferme le panneau, sortir du mode viseme
+        settingsToggle.addEventListener('click', () => {
+            if (!settingsPanel.classList.contains('visible') && visemePreviewMode) {
+                exitVisemeMode();
+            }
+        }, true);
 
         // Toggle perf panel
         document.getElementById('toggle-perf').addEventListener('change', (ev) => {
@@ -1680,7 +1720,6 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
         // ══════════════════════════════════════════════════════════
         // VISEME EDITOR (Tab 2)
         // ══════════════════════════════════════════════════════════
-        let previewingViseme = null;
 
         function buildVisemeEditor() {
             const container = document.getElementById('viseme-editor');
@@ -1706,10 +1745,9 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
                 const previewBtn = document.createElement('button');
                 previewBtn.className = 'viseme-preview-btn';
                 previewBtn.textContent = '\u25B6';
-                previewBtn.title = 'Preview sur avatar';
-                previewBtn.addEventListener('mousedown', () => startPreview(visemeId, previewBtn));
-                previewBtn.addEventListener('mouseup', stopPreview);
-                previewBtn.addEventListener('mouseleave', stopPreview);
+                previewBtn.title = 'Preview sur avatar (clic = play/stop)';
+                previewBtn.dataset.viseme = visemeId;
+                previewBtn.addEventListener('click', () => togglePreview(visemeId, previewBtn));
 
                 header.append(label, idSpan, previewBtn);
                 item.appendChild(header);
@@ -1788,34 +1826,55 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
             });
         }
 
-        // ── Preview: apply viseme shapes directly to avatar ──
-        function startPreview(visemeId, btn) {
+        // ── Preview: toggle play/stop per viseme, accumulation ──
+        function applyAllActivePreviews() {
             if (!lipsyncMesh) return;
-            previewingViseme = visemeId;
-            // Reset all shape keys first
+            // Reset all shape keys
             for (const key of ALL_SHAPE_KEYS) {
                 const idx = morphDict[key];
                 if (idx !== undefined) lipsyncMesh.morphTargetInfluences[idx] = 0;
             }
-            // Apply this viseme's composition
-            const shapes = VISEME_MAP[visemeId] || [];
-            for (const { shape, intensity } of shapes) {
-                const idx = morphDict[shape];
-                if (idx !== undefined) {
-                    lipsyncMesh.morphTargetInfluences[idx] = Math.min(intensity * CONFIG.maxIntensity, 3.0);
+            // Accumulate all active previews
+            for (const visemeId of activePreviewVisemes) {
+                const shapes = VISEME_MAP[visemeId] || [];
+                for (const { shape, intensity } of shapes) {
+                    const idx = morphDict[shape];
+                    if (idx !== undefined) {
+                        const current = lipsyncMesh.morphTargetInfluences[idx] || 0;
+                        lipsyncMesh.morphTargetInfluences[idx] = Math.min(
+                            current + intensity * CONFIG.maxIntensity, 3.0
+                        );
+                    }
                 }
             }
-            btn.classList.add('active');
         }
 
-        function stopPreview() {
-            if (!lipsyncMesh || !previewingViseme) return;
-            previewingViseme = null;
-            for (const key of ALL_SHAPE_KEYS) {
-                const idx = morphDict[key];
-                if (idx !== undefined) lipsyncMesh.morphTargetInfluences[idx] = 0;
+        function togglePreview(visemeId, btn) {
+            if (!lipsyncMesh) return;
+            if (activePreviewVisemes.has(visemeId)) {
+                activePreviewVisemes.delete(visemeId);
+                btn.textContent = '\u25B6';
+                btn.classList.remove('active');
+            } else {
+                activePreviewVisemes.add(visemeId);
+                btn.textContent = '\u25A0';
+                btn.classList.add('active');
             }
-            document.querySelectorAll('.viseme-preview-btn.active').forEach(b => b.classList.remove('active'));
+            applyAllActivePreviews();
+        }
+
+        function stopAllPreviews() {
+            activePreviewVisemes.clear();
+            if (lipsyncMesh) {
+                for (const key of ALL_SHAPE_KEYS) {
+                    const idx = morphDict[key];
+                    if (idx !== undefined) lipsyncMesh.morphTargetInfluences[idx] = 0;
+                }
+            }
+            document.querySelectorAll('.viseme-preview-btn.active').forEach(b => {
+                b.textContent = '\u25B6';
+                b.classList.remove('active');
+            });
         }
 
         // Build the editor
