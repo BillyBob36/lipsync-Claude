@@ -1,0 +1,1477 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Avatar Chat</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; }
+        #canvas-container { width: 100vw; height: 100vh; }
+        canvas { display: block; }
+
+        #chat-container {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 500px;
+            max-width: 90vw;
+            z-index: 10;
+        }
+
+        #chat-messages {
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 12px;
+            margin-bottom: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255,255,255,0.2) transparent;
+        }
+
+        .message {
+            padding: 10px 14px;
+            border-radius: 16px;
+            max-width: 85%;
+            font-size: 14px;
+            line-height: 1.4;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.user {
+            align-self: flex-end;
+            background: rgba(59, 130, 246, 0.8);
+            color: #fff;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.avatar {
+            align-self: flex-start;
+            background: rgba(255, 255, 255, 0.12);
+            color: #e0e0e0;
+            border-bottom-left-radius: 4px;
+            backdrop-filter: blur(10px);
+        }
+
+        #chat-input-container {
+            display: flex;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 6px 6px 6px 18px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+
+        #chat-input {
+            flex: 1;
+            background: none;
+            border: none;
+            outline: none;
+            color: #fff;
+            font-size: 15px;
+            font-family: inherit;
+        }
+
+        #chat-input::placeholder { color: rgba(255, 255, 255, 0.4); }
+
+        #send-btn {
+            background: rgba(59, 130, 246, 0.85);
+            color: #fff;
+            border: none;
+            border-radius: 20px;
+            padding: 10px 20px;
+            font-size: 14px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: background 0.2s;
+        }
+
+        #send-btn:hover { background: rgba(59, 130, 246, 1); }
+        #send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        #status {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            color: rgba(255,255,255,0.5);
+            font-size: 12px;
+            z-index: 10;
+        }
+
+        /* ── Settings Panel ── */
+        #settings-toggle {
+            position: fixed;
+            top: 16px;
+            left: 16px;
+            z-index: 20;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.08);
+            backdrop-filter: blur(10px);
+            color: #ccc;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s, transform 0.3s;
+        }
+        #settings-toggle:hover { background: rgba(255,255,255,0.15); }
+        #settings-toggle.open { transform: rotate(90deg); }
+
+        #settings-panel {
+            position: fixed;
+            top: 60px;
+            left: 16px;
+            width: 320px;
+            max-height: calc(100vh - 80px);
+            overflow-y: auto;
+            z-index: 20;
+            background: rgba(15, 15, 20, 0.92);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 16px;
+            display: none;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255,255,255,0.15) transparent;
+        }
+        #settings-panel.visible { display: block; }
+
+        #settings-panel h3 {
+            color: #e0e0e0;
+            font-size: 13px;
+            font-weight: 600;
+            margin: 0 0 12px 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .param-section {
+            margin-bottom: 14px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        .param-section:last-of-type { border-bottom: none; }
+
+        .param-section-title {
+            color: rgba(255,255,255,0.4);
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-bottom: 8px;
+        }
+
+        .param-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
+        .param-row label {
+            flex: 1;
+            color: rgba(255,255,255,0.7);
+            font-size: 11px;
+            white-space: nowrap;
+        }
+        .param-row label[title] {
+            cursor: help;
+            text-decoration: underline dotted rgba(255,255,255,0.3);
+        }
+
+        .param-row input[type="range"] {
+            flex: 1.2;
+            height: 4px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: rgba(255,255,255,0.12);
+            border-radius: 2px;
+            outline: none;
+        }
+        .param-row input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #5b9bf5;
+            cursor: pointer;
+        }
+
+        .param-row .param-val {
+            color: #5b9bf5;
+            font-size: 11px;
+            font-family: 'Consolas', monospace;
+            min-width: 32px;
+            text-align: right;
+        }
+
+        .settings-actions {
+            display: flex;
+            gap: 6px;
+            margin-top: 12px;
+        }
+
+        .settings-actions button {
+            flex: 1;
+            padding: 7px 0;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.06);
+            color: #ccc;
+            font-size: 11px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: background 0.2s;
+        }
+        .settings-actions button:hover { background: rgba(255,255,255,0.12); }
+        .settings-actions button.primary {
+            background: rgba(59,130,246,0.3);
+            border-color: rgba(59,130,246,0.4);
+        }
+        .settings-actions button.primary:hover { background: rgba(59,130,246,0.5); }
+
+        .param-row input[type="text"],
+        .param-row input[type="password"] {
+            flex: 2;
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 6px;
+            padding: 5px 8px;
+            color: #e0e0e0;
+            font-size: 11px;
+            font-family: 'Consolas', monospace;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .param-row input[type="text"]:focus,
+        .param-row input[type="password"]:focus {
+            border-color: rgba(59,130,246,0.6);
+        }
+        .param-row input[type="password"] { letter-spacing: 2px; }
+        .api-status { font-size: 10px; margin-left: 4px; }
+        .api-status.ok { color: #4ade80; }
+        .api-status.missing { color: #f87171; }
+
+        #copy-toast {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: rgba(59,130,246,0.9);
+            color: #fff;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 13px;
+            z-index: 30;
+            opacity: 0;
+            transition: opacity 0.3s, transform 0.3s;
+            pointer-events: none;
+        }
+        #copy-toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas-container"></div>
+    <div id="status">Chargement...</div>
+    <audio id="tts-audio" style="display:none"></audio>
+
+    <!-- Settings Toggle + Panel -->
+    <button id="settings-toggle" title="Lipsync Settings">&#9881;</button>
+    <div id="settings-panel">
+        <h3>Tuning Avatar</h3>
+
+        <!-- ── API KEYS ── -->
+        <div class="param-section">
+            <div class="param-section-title">Cles API (stockees localement)</div>
+            <div class="param-row">
+                <label title="Cle Azure Speech Services pour la synthese vocale (TTS).">Speech Key</label>
+                <input type="password" id="input-speech-key" placeholder="Coller la cle ici...">
+                <span class="api-status missing" id="status-speech-key">&#10007;</span>
+            </div>
+            <div class="param-row">
+                <label title="Cle Azure OpenAI pour GPT.">GPT Key</label>
+                <input type="password" id="input-gpt-key" placeholder="Coller la cle ici...">
+                <span class="api-status missing" id="status-gpt-key">&#10007;</span>
+            </div>
+        </div>
+
+        <!-- ── LIPSYNC ── -->
+        <div class="param-section">
+            <div class="param-section-title">Lipsync - Transitions</div>
+            <div class="param-row">
+                <label title="Vitesse d'ouverture des formes de bouche. Controle la rapidite avec laquelle la bouche atteint la forme du viseme actif. 0.1 = tres doux et lent. 0.35 = recommande ActorCore. 0.8 = quasi-instantane mais saccade.">Lerp Speed</label>
+                <input type="range" data-param="lerpSpeed" min="0.05" max="0.8" step="0.01" value="0.35">
+                <span class="param-val">0.35</span>
+            </div>
+            <div class="param-row">
+                <label title="Vitesse de fermeture quand un viseme devient inactif. Controle la rapidite du retour au neutre. Plus haut = bouche se ferme plus vite entre les syllabes. 0.15 = lent (bouche reste ouverte). 0.45 = recommande. 0.9 = fermeture tres agressive.">Lerp Decay</label>
+                <input type="range" data-param="lerpDecay" min="0.1" max="0.9" step="0.01" value="0.45">
+                <span class="param-val">0.45</span>
+            </div>
+            <div class="param-row">
+                <label title="Force un retour a bouche fermee entre chaque shape key. 0 = comportement normal (lerp direct d'un viseme a l'autre). 1 = l'ancienne forme doit etre a 0 avant que la nouvelle s'ouvre, articulation tres percutante.">Reset Neutral</label>
+                <input type="range" data-param="resetToNeutral" min="0" max="1" step="0.05" value="0">
+                <span class="param-val">0</span>
+            </div>
+        </div>
+
+        <div class="param-section">
+            <div class="param-section-title">Lipsync - Intensite</div>
+            <div class="param-row">
+                <label title="Multiplicateur global de toutes les formes de bouche. Compense la faiblesse des exports ActorCore en WebGL. Si la bouche marmonne = augmenter. Si exagere = baisser. 0.5 = tres subtil. 1.4 = recommande ActorCore. 2.5 = maximum debug.">Max Intensity</label>
+                <input type="range" data-param="maxIntensity" min="0.3" max="2.5" step="0.1" value="1.0">
+                <span class="param-val">1.0</span>
+            </div>
+            <div class="param-row">
+                <label title="Multiplicateur specifique pour V_Open (bouche grande ouverte, voyelles A/AA). Controle separement l'amplitude des sons 'aaa'. 0.8 = discret. 1.6 = recommande. 3.0 = tres exagere, utile pour debug.">Open Multiplier</label>
+                <input type="range" data-param="openMultiplier" min="0.5" max="3.0" step="0.1" value="1.6">
+                <span class="param-val">1.6</span>
+            </div>
+            <div class="param-row">
+                <label title="Multiplicateur pour V_Tight_O (bouche arrondie, voyelles O/U/I). Controle l'amplitude de la bouche en 'O'. 0.5 = discret. 1.2 = recommande. 2.0 = exagere.">Tight Multiplier</label>
+                <input type="range" data-param="tightMultiplier" min="0.5" max="2.5" step="0.1" value="1.4">
+                <span class="param-val">1.4</span>
+            </div>
+        </div>
+
+        <div class="param-section">
+            <div class="param-section-title">Lipsync - Machoire / Langue</div>
+            <div class="param-row">
+                <label title="Boost supplementaire de la machoire sur les voyelles ouvertes (aa, O, E). Ajoute un V_Open extra au-dessus du viseme normal pour simuler l'ouverture naturelle de la machoire. 0.5 = subtil. 2.0 = recommande. 4.0 = grande ouverture.">Jaw Boost</label>
+                <input type="range" data-param="jawBoost" min="0.3" max="4.0" step="0.1" value="2.0">
+                <span class="param-val">2.0</span>
+            </div>
+            <div class="param-row">
+                <label title="Echelle des mouvements de langue (V_Tongue_*). Trop haut = langue sort de maniere excessive. 0.0 = pas de langue. 0.4 = recommande. 1.0 = maximum.">Tongue Scale</label>
+                <input type="range" data-param="tongueScale" min="0.0" max="1.5" step="0.05" value="0.4">
+                <span class="param-val">0.4</span>
+            </div>
+            <div class="param-row">
+                <label title="Seuil en-dessous duquel un viseme est considere silencieux et reset a zero. Empeche les micro-residus. 0.01 = nettoie tout. 0.05 = recommande. 0.15 = tolere les residus.">Silence Threshold</label>
+                <input type="range" data-param="silenceThreshold" min="0.01" max="0.2" step="0.01" value="0.05">
+                <span class="param-val">0.05</span>
+            </div>
+        </div>
+
+        <!-- ── IDLE FACE ── -->
+        <div class="param-section">
+            <div class="param-section-title">Idle - Clignements</div>
+            <div class="param-row">
+                <label title="Intervalle minimum entre deux clignements (en secondes). Humain naturel: 1-4s.">Blink Min (s)</label>
+                <input type="range" data-param="blinkIntervalMin" min="0.5" max="4.0" step="0.1" value="1.0">
+                <span class="param-val">1.0</span>
+            </div>
+            <div class="param-row">
+                <label title="Intervalle maximum entre deux clignements (en secondes). Plus haut = moins frequent.">Blink Max (s)</label>
+                <input type="range" data-param="blinkIntervalMax" min="3.0" max="12.0" step="0.5" value="8.0">
+                <span class="param-val">8.0</span>
+            </div>
+            <div class="param-row">
+                <label title="Duree de la fermeture de l'oeil (en ms). Humain naturel: 50-75ms. La phase d'ouverture est 1.5x plus lente.">Blink Close (ms)</label>
+                <input type="range" data-param="blinkCloseDuration" min="30" max="200" step="5" value="60">
+                <span class="param-val">60</span>
+            </div>
+            <div class="param-row">
+                <label title="Duree de la pause yeux fermes (en ms). 100-300ms naturel.">Blink Hold (ms)</label>
+                <input type="range" data-param="blinkHoldDuration" min="50" max="400" step="10" value="150">
+                <span class="param-val">150</span>
+            </div>
+            <div class="param-row">
+                <label title="Probabilite d'un double clignement rapide (0-1). 0.15 = 15% naturel.">Double Blink %</label>
+                <input type="range" data-param="doubleBlink" min="0.0" max="0.5" step="0.05" value="0.15">
+                <span class="param-val">0.15</span>
+            </div>
+        </div>
+
+        <div class="param-section">
+            <div class="param-section-title">Idle - Micro-expressions</div>
+            <div class="param-row">
+                <label title="Amplitude des micro-mouvements de bouche au repos (sourire, compression). 0 = visage fige.">Mouth Idle</label>
+                <input type="range" data-param="microMouthAmp" min="0.0" max="0.3" step="0.01" value="0.3">
+                <span class="param-val">0.3</span>
+            </div>
+            <div class="param-row">
+                <label title="Amplitude des mouvements de sourcils au repos. Donne un air vivant/curieux.">Brow Idle</label>
+                <input type="range" data-param="microBrowAmp" min="0.0" max="0.3" step="0.01" value="0.3">
+                <span class="param-val">0.3</span>
+            </div>
+            <div class="param-row">
+                <label title="Vitesse des cycles de micro-expressions. Plus haut = changements plus rapides et nerveux.">Micro Speed</label>
+                <input type="range" data-param="microSpeed" min="0.1" max="4.0" step="0.1" value="2.0">
+                <span class="param-val">2.0</span>
+            </div>
+        </div>
+
+        <div class="param-section">
+            <div class="param-section-title">Idle - Respiration / Tete</div>
+            <div class="param-row">
+                <label title="Amplitude de la respiration visible (legers mouvements de tete/bouche). 0 = pas de respiration.">Breath Amp</label>
+                <input type="range" data-param="breathAmplitude" min="0.0" max="0.15" step="0.01" value="0.15">
+                <span class="param-val">0.15</span>
+            </div>
+            <div class="param-row">
+                <label title="Vitesse du cycle de respiration. 2.3 = environ 2.7s par cycle (rythme naturel au repos).">Breath Speed</label>
+                <input type="range" data-param="breathSpeed" min="1.0" max="6.0" step="0.1" value="4.0">
+                <span class="param-val">4.0</span>
+            </div>
+            <div class="param-row">
+                <label title="Amplitude du leger balancement naturel de la tete au repos.">Head Drift</label>
+                <input type="range" data-param="headDriftAmp" min="0.0" max="0.3" step="0.01" value="0.15">
+                <span class="param-val">0.15</span>
+            </div>
+        </div>
+
+        <div class="param-section">
+            <div class="param-section-title">Debug</div>
+            <div class="param-row">
+                <label title="Affiche FPS, temps GPT, temps TTS Azure, et viseme actif en temps reel.">Show Perf</label>
+                <input type="checkbox" id="toggle-perf">
+            </div>
+        </div>
+
+        <div class="settings-actions">
+            <button id="btn-replay">Rejouer</button>
+            <button id="btn-reset">Reset</button>
+            <button id="btn-copy" class="primary">Copier</button>
+        </div>
+    </div>
+    <div id="copy-toast">Config copiee !</div>
+    <div id="perf-panel" style="display:none;position:fixed;top:16px;right:16px;z-index:20;background:rgba(0,0,0,0.75);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px 14px;font-family:Consolas,monospace;font-size:11px;color:rgba(255,255,255,0.7);min-width:200px;pointer-events:none;">
+        <div style="color:rgba(255,255,255,0.4);font-size:9px;text-transform:uppercase;margin-bottom:6px;">Performance</div>
+        <div id="perf-fps">FPS: --</div>
+        <div id="perf-gpt" style="margin-top:3px;">GPT: --</div>
+        <div id="perf-tts" style="margin-top:3px;">TTS: --</div>
+        <div id="perf-lipsync" style="margin-top:3px;">Lip Delay: --</div>
+        <div id="perf-viseme" style="margin-top:3px;">Viseme: --</div>
+        <div id="perf-volume" style="margin-top:3px;">Volume: --</div>
+    </div>
+
+    <div id="chat-container">
+        <div id="chat-messages"></div>
+        <div id="chat-input-container">
+            <input type="text" id="chat-input" placeholder="Ecrivez votre message..." autocomplete="off">
+            <button id="send-btn">Envoyer</button>
+        </div>
+    </div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.167.1/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.167.1/examples/jsm/",
+            "wawa-lipsync": "./wawa-lipsync.es.js",
+            "wiggle": "https://cdn.jsdelivr.net/npm/wiggle/+esm"
+        }
+    }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import { Lipsync } from 'wawa-lipsync';
+        import { WiggleBone } from 'wiggle';
+
+        // ── Azure TTS Config ──
+        let SPEECH_KEY = localStorage.getItem('avatar_speech_key') || '';
+        const TTS_ENDPOINT = 'https://westeurope.tts.speech.microsoft.com';
+        const VOICE_NAME = 'fr-FR-RemyMultilingualNeural';
+
+        // ── Azure OpenAI (GPT-5.2) Config ──
+        const GPT_ENDPOINT = 'https://johann-api-resource.cognitiveservices.azure.com/';
+        let GPT_KEY = localStorage.getItem('avatar_gpt_key') || '';
+        const GPT_DEPLOYMENT = 'gpt-5.2';
+        const GPT_API_VERSION = '2024-12-01-preview';
+
+        const conversationHistory = [
+            {
+                role: 'system',
+                content: `Tu es un assistant virtuel fun et decontracte. Tu parles de maniere naturelle, avec de l'humour et un ton amical, comme un pote.
+Tes reponses sont COURTES (2-3 phrases max) car elles seront prononcees a voix haute par un avatar.
+Pas de listes, pas de markdown, pas de bullet points, pas d'emojis. Juste du texte naturel parle.
+Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujours en francais.`
+            }
+        ];
+
+        async function getAIResponse(userMessage) {
+            conversationHistory.push({ role: 'user', content: userMessage });
+            const response = await fetch(
+                `${GPT_ENDPOINT}openai/deployments/${GPT_DEPLOYMENT}/chat/completions?api-version=${GPT_API_VERSION}`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'api-key': GPT_KEY },
+                    body: JSON.stringify({ messages: conversationHistory, max_completion_tokens: 200 }),
+                }
+            );
+            if (!response.ok) throw new Error(`GPT Error: ${response.status}`);
+            const data = await response.json();
+            const reply = data.choices[0].message.content;
+            conversationHistory.push({ role: 'assistant', content: reply });
+            if (conversationHistory.length > 21) conversationHistory.splice(1, 2);
+            return reply;
+        }
+
+        // ══════════════════════════════════════════════════════════
+        // CONFIGURATION GLOBALE (lipsync + idle)
+        // ══════════════════════════════════════════════════════════
+        const CONFIG = {
+            // ── Lipsync ──
+            lerpSpeed: 0.35,
+            lerpDecay: 0.45,
+            resetToNeutral: 0,
+            maxIntensity: 1.0,
+            openMultiplier: 1.6,
+            tightMultiplier: 1.4,
+            jawBoost: 2.0,
+            tongueScale: 0.4,
+            silenceThreshold: 0.05,
+
+            // ── Idle: Blinks ──
+            blinkIntervalMin: 1.0,
+            blinkIntervalMax: 8.0,
+            blinkCloseDuration: 60,
+            blinkHoldDuration: 150,
+            doubleBlink: 0.15,
+
+            // ── Idle: Micro-expressions ──
+            microMouthAmp: 0.3,
+            microBrowAmp: 0.3,
+            microSpeed: 2.0,
+
+            // ── Idle: Breathing & head drift ──
+            breathAmplitude: 0.15,
+            breathSpeed: 4.0,
+            headDriftAmp: 0.15,
+        };
+
+        // ══════════════════════════════════════════════════════════
+        // VISEME MAPPING (1 shape key per viseme)
+        // ══════════════════════════════════════════════════════════
+        const visemeToShapeKey = {
+            'viseme_sil': null,
+            'viseme_PP':  'V_Tight',
+            'viseme_FF':  'V_Lip_Open',
+            'viseme_TH':  'V_Dental_Lip',
+            'viseme_DD':  'V_Tight_O',
+            'viseme_kk':  'V_Explosive',
+            'viseme_CH':  'V_Affricate',
+            'viseme_SS':  'V_Wide',
+            'viseme_nn':  'V_Tight_O',
+            'viseme_RR':  'V_Lip_Open',
+            'viseme_aa':  'V_Open',
+            'viseme_E':   'V_Wide',
+            'viseme_I':   'V_Wide',
+            'viseme_O':   'V_Tight_O',
+            'viseme_U':   'V_Tight',
+        };
+
+        const ALL_VISEME_KEYS = [
+            'V_Open', 'V_Tight-O', 'V_Tight', 'V_Affricate',
+            'V_Tight_O', 'V_Wide', 'V_Lip_Open', 'V_Dental_Lip', 'V_Explosive',
+            'V_Tongue_Raise', 'V_Tongue_Out', 'V_Tongue_Lower',
+            'V_Tongue_Curl-U', 'V_Tongue_Curl-D'
+        ];
+
+        // Shape keys used by idle animations (manually controlled, not by mixer)
+        // Head movement is done via bone rotation, not shape keys.
+        const IDLE_FACE_KEYS = [
+            'Eye_Blink', 'Eye_Blink_L', 'Eye_Blink_R',
+            'Eye_L_Look_Down', 'Eye_R_Look_Down',
+            'Brow_Raise_Outer_L', 'Brow_Raise_Outer_R',
+            'Mouth_Smile_L', 'Mouth_Smile_R',
+            'Mouth_Roll_In_Lower', 'Mouth_Close',
+            'Cheek_Puff_L', 'Cheek_Puff_R',
+        ];
+
+        // ── Three.js Setup ──
+        const container = document.getElementById('canvas-container');
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
+        renderer.toneMapping = THREE.NoToneMapping;
+        container.appendChild(renderer.domElement);
+
+        const scene = new THREE.Scene();
+        let camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+
+        // ── Performance timers ──
+        const PERF = {
+            fps: 0,
+            frameCount: 0,
+            lastFpsTime: 0,
+            gptMs: 0,
+            ttsMs: 0,
+            lipsyncReadyMs: 0,
+            audioReadyTime: 0,
+            showPerf: false,
+        };
+
+        // ── State ──
+        let mixer, idleAction, parleAction;
+        let lipsyncMesh = null;
+        let morphDict = {};
+        let headBone = null; // For procedural head drift via bone rotation
+        const headBoneRestQuat = new THREE.Quaternion();
+        const clock = new THREE.Clock();
+        let isSpeaking = false;
+        let elapsedTime = 0;
+        let prevShapeKey = null;
+
+        // ── Hair Wiggle Bones ──
+        const wiggleBones = [];
+        // Stocke la position locale (en espace parent) des bones racines
+        // pour bloquer toute translation parasite après le wiggle update
+        const hairRootLocalPos = new Map();
+
+        // ── Wawa-Lipsync ──
+        const lipsync = new Lipsync();
+        const audioEl = document.getElementById('tts-audio');
+        let lipsyncConnected = false;
+        let lastAudioUrl = null;
+
+        // ══════════════════════════════════════════════════════════
+        // BLINK SYSTEM (3-phase: close -> hold -> open)
+        // Based on Disney Research + PMC high-speed camera studies
+        // ══════════════════════════════════════════════════════════
+        const blinkState = {
+            nextBlinkTime: 2.0,     // when next blink triggers
+            phase: 'waiting',       // 'waiting' | 'closing' | 'holding' | 'opening'
+            phaseStart: 0,
+            doDouble: false,
+            doubleCount: 0,
+        };
+
+        function scheduleNextBlink() {
+            // Skewed random distribution favoring shorter intervals
+            const min = CONFIG.blinkIntervalMin;
+            const max = CONFIG.blinkIntervalMax;
+            const r = Math.pow(Math.random(), 1.5); // skewed toward lower
+            blinkState.nextBlinkTime = elapsedTime + min + r * (max - min);
+            blinkState.phase = 'waiting';
+            blinkState.doDouble = Math.random() < CONFIG.doubleBlink;
+            blinkState.doubleCount = 0;
+        }
+
+        function updateBlink() {
+            if (!lipsyncMesh) return;
+            const blinkIdx = morphDict['Eye_Blink'];
+            if (blinkIdx === undefined) return;
+
+            const closeDur = CONFIG.blinkCloseDuration / 1000;
+            const holdDur = CONFIG.blinkHoldDuration / 1000;
+            const openDur = closeDur * 1.5; // opening is 1.5x slower than closing
+
+            switch (blinkState.phase) {
+                case 'waiting':
+                    if (elapsedTime >= blinkState.nextBlinkTime) {
+                        blinkState.phase = 'closing';
+                        blinkState.phaseStart = elapsedTime;
+                    }
+                    break;
+
+                case 'closing': {
+                    const progress = (elapsedTime - blinkState.phaseStart) / closeDur;
+                    const eased = Math.min(1, progress * progress); // ease-in (fast close)
+                    lipsyncMesh.morphTargetInfluences[blinkIdx] = eased;
+                    if (progress >= 1) {
+                        blinkState.phase = 'holding';
+                        blinkState.phaseStart = elapsedTime;
+                    }
+                    break;
+                }
+
+                case 'holding':
+                    lipsyncMesh.morphTargetInfluences[blinkIdx] = 1;
+                    if (elapsedTime - blinkState.phaseStart >= holdDur) {
+                        blinkState.phase = 'opening';
+                        blinkState.phaseStart = elapsedTime;
+                    }
+                    break;
+
+                case 'opening': {
+                    const progress = (elapsedTime - blinkState.phaseStart) / openDur;
+                    const eased = 1 - Math.min(1, Math.sqrt(progress)); // ease-out (slow open)
+                    lipsyncMesh.morphTargetInfluences[blinkIdx] = eased;
+                    if (progress >= 1) {
+                        lipsyncMesh.morphTargetInfluences[blinkIdx] = 0;
+                        blinkState.doubleCount++;
+                        if (blinkState.doDouble && blinkState.doubleCount < 2) {
+                            // Trigger double blink with short gap
+                            blinkState.phase = 'closing';
+                            blinkState.phaseStart = elapsedTime + 0.05 + Math.random() * 0.15;
+                        } else {
+                            scheduleNextBlink();
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+
+        // ══════════════════════════════════════════════════════════
+        // MICRO-EXPRESSIONS (layered sine waves, asymmetric)
+        // Based on TalkingHead mood system
+        // ══════════════════════════════════════════════════════════
+        function updateMicroExpressions() {
+            if (!lipsyncMesh || isSpeaking) return;
+            const t = elapsedTime * CONFIG.microSpeed;
+            const cfg = CONFIG;
+
+            // Subtle resting smile (asymmetric for realism)
+            setMorph('Mouth_Smile_L',
+                0.05 + Math.sin(t * 0.23 + 0.0) * cfg.microMouthAmp * 0.6);
+            setMorph('Mouth_Smile_R',
+                0.04 + Math.sin(t * 0.19 + 1.2) * cfg.microMouthAmp * 0.5);
+
+            // Lip compression (thinking micro-expression)
+            const lipRoll = Math.max(0, Math.sin(t * 0.11 + 3.7)) * cfg.microMouthAmp * 0.4;
+            setMorph('Mouth_Roll_In_Lower', lipRoll);
+
+            // Brow raise (curiosity/alertness, asymmetric)
+            setMorph('Brow_Raise_Outer_L',
+                Math.max(0, Math.sin(t * 0.17 + 0.5)) * cfg.microBrowAmp);
+            setMorph('Brow_Raise_Outer_R',
+                Math.max(0, Math.sin(t * 0.13 + 2.1)) * cfg.microBrowAmp * 0.7);
+
+            // Subtle cheek puff (very faint, adds life)
+            const cheek = Math.max(0, Math.sin(t * 0.07 + 5.0)) * 0.03;
+            setMorph('Cheek_Puff_L', cheek);
+            setMorph('Cheek_Puff_R', cheek * 0.8);
+        }
+
+        // ══════════════════════════════════════════════════════════
+        // BREATHING
+        // Subtle ~2.7s sine cycle. The head bone drift already
+        // incorporates a pitch component; breathing just adds
+        // a very faint Mouth_Close pulse to simulate lip parting.
+        // ══════════════════════════════════════════════════════════
+        function updateBreathing() {
+            if (!lipsyncMesh) return;
+            const breathPhase = Math.sin(elapsedTime * CONFIG.breathSpeed) * 0.5 + 0.5;
+            const amp = CONFIG.breathAmplitude;
+
+            // Slight mouth open on exhale (only when not speaking)
+            if (!isSpeaking) {
+                setMorph('Mouth_Close', (1 - breathPhase) * amp * 0.3);
+            }
+        }
+
+        // ══════════════════════════════════════════════════════════
+        // HEAD DRIFT (bone rotation + eye gaze shape keys)
+        // Layered sine waves at irrational frequency ratios to
+        // prevent visible repetition loops.
+        // ══════════════════════════════════════════════════════════
+        const _headEuler = new THREE.Euler();
+        const _headQuat = new THREE.Quaternion();
+
+        function updateHeadDrift() {
+            const t = elapsedTime;
+            const amp = isSpeaking ? CONFIG.headDriftAmp * 0.4 : CONFIG.headDriftAmp;
+
+            // ── Head bone rotation (yaw, pitch, roll) ──
+            if (headBone) {
+                const yaw   = Math.sin(t * 0.31) * amp;                      // slow turn
+                const pitch = Math.sin(t * 0.23 + 0.7) * amp * 0.5;         // slow nod
+                const roll  = Math.sin(t * 0.19 + 1.5) * amp * 0.3;         // slow tilt
+                _headEuler.set(pitch, yaw, roll);
+                _headQuat.setFromEuler(_headEuler);
+                _headQuat.premultiply(headBoneRestQuat);
+                headBone.quaternion.slerp(_headQuat, 0.05); // smooth transition
+            }
+
+            // ── Eye gaze shifts (shape keys) ──
+            if (lipsyncMesh && !isSpeaking) {
+                const gaze = Math.max(0, Math.sin(t * 0.13 + 0.7)) * 0.12;
+                setMorph('Eye_L_Look_Down', gaze);
+                setMorph('Eye_R_Look_Down', gaze * 0.9);
+            }
+        }
+
+        // Helper: set morph target with bounds check
+        function setMorph(name, value) {
+            const idx = morphDict[name];
+            if (idx === undefined) return;
+            lipsyncMesh.morphTargetInfluences[idx] = Math.max(0, Math.min(value, 1.0));
+        }
+
+        // Helper: lerp a morph target
+        function lerpMorph(name, target, factor) {
+            const idx = morphDict[name];
+            if (idx === undefined) return;
+            const current = lipsyncMesh.morphTargetInfluences[idx] || 0;
+            lipsyncMesh.morphTargetInfluences[idx] = THREE.MathUtils.lerp(current, target, factor);
+        }
+
+        // ══════════════════════════════════════════════════════════
+        // LIPSYNC (aggressive ActorCore config)
+        // 1. Reset all viseme shapes toward 0
+        // 2. Apply only the active viseme with per-type boost
+        // 3. Jaw procedural boost on open vowels
+        // ══════════════════════════════════════════════════════════
+        function applyLipsync() {
+            if (!lipsyncMesh) return;
+            const cfg = CONFIG;
+
+            if (isSpeaking) {
+                lipsync.processAudio();
+                const currentViseme = lipsync.viseme;
+                const targetShapeKey = visemeToShapeKey[currentViseme];
+
+                // 1. RESET — fermeture rapide de tous les visemes
+                for (const key of ALL_VISEME_KEYS) {
+                    const idx = morphDict[key];
+                    if (idx === undefined) continue;
+                    const current = lipsyncMesh.morphTargetInfluences[idx] || 0;
+                    if (current > cfg.silenceThreshold) {
+                        lipsyncMesh.morphTargetInfluences[idx] = THREE.MathUtils.lerp(
+                            current, 0, cfg.lerpDecay
+                        );
+                    }
+                }
+
+                // 2. VISEME ACTIF — booste par type
+                if (targetShapeKey) {
+                    const idx = morphDict[targetShapeKey];
+                    if (idx !== undefined) {
+                        let targetIntensity = 1.0;
+
+                        if (targetShapeKey === 'V_Open') {
+                            targetIntensity *= cfg.openMultiplier;
+                        } else if (targetShapeKey === 'V_Tight_O' || targetShapeKey === 'V_Tight-O') {
+                            targetIntensity *= cfg.tightMultiplier;
+                        } else if (targetShapeKey.startsWith('V_Tongue_')) {
+                            targetIntensity *= cfg.tongueScale;
+                        } else {
+                            targetIntensity *= cfg.maxIntensity;
+                        }
+
+                        targetIntensity = Math.min(targetIntensity, cfg.maxIntensity);
+
+                        // Reset to neutral: si on change de shape key, on attend
+                        // que l'ancienne soit retombee avant d'ouvrir la nouvelle.
+                        // resetToNeutral=0 → aucun effet. 1 → passage obligatoire par 0.
+                        if (cfg.resetToNeutral > 0 && prevShapeKey && prevShapeKey !== targetShapeKey) {
+                            const prevIdx = morphDict[prevShapeKey];
+                            if (prevIdx !== undefined) {
+                                const prevInfluence = lipsyncMesh.morphTargetInfluences[prevIdx] || 0;
+                                const gate = 1.0 - prevInfluence * cfg.resetToNeutral;
+                                targetIntensity *= Math.max(0, gate);
+                            }
+                        }
+
+                        const current = lipsyncMesh.morphTargetInfluences[idx] || 0;
+                        lipsyncMesh.morphTargetInfluences[idx] = THREE.MathUtils.lerp(
+                            current, targetIntensity, cfg.lerpSpeed
+                        );
+                    }
+                    prevShapeKey = targetShapeKey;
+                }
+
+                // 3. MACHOIRE PROCEDURALE — boost sur voyelles ouvertes
+                const isOpenVowel = currentViseme === 'viseme_aa' ||
+                                    currentViseme === 'viseme_O' ||
+                                    currentViseme === 'viseme_E';
+                if (isOpenVowel) {
+                    const jawIdx = morphDict['V_Open'];
+                    if (jawIdx !== undefined) {
+                        const current = lipsyncMesh.morphTargetInfluences[jawIdx] || 0;
+                        const jawTarget = Math.min(cfg.jawBoost, cfg.maxIntensity);
+                        lipsyncMesh.morphTargetInfluences[jawIdx] = THREE.MathUtils.lerp(
+                            current, jawTarget, 0.4
+                        );
+                    }
+                }
+
+            } else {
+                // Silence: reset all viseme keys
+                for (const key of ALL_VISEME_KEYS) {
+                    const idx = morphDict[key];
+                    if (idx === undefined) continue;
+                    const current = lipsyncMesh.morphTargetInfluences[idx] || 0;
+                    if (current > 0.01) {
+                        lipsyncMesh.morphTargetInfluences[idx] = THREE.MathUtils.lerp(
+                            current, 0, cfg.lerpDecay
+                        );
+                    } else {
+                        lipsyncMesh.morphTargetInfluences[idx] = 0;
+                    }
+                }
+            }
+        }
+
+        // ══════════════════════════════════════════════════════════
+        // HAIR ALPHA: merge color + alpha mask textures
+        // Auto-detects alpha in alpha channel vs RGB luminance
+        // ══════════════════════════════════════════════════════════
+        function mergeColorAndAlpha(colorTex, alphaTex) {
+            return new Promise((resolve) => {
+                const colorImg = colorTex.image;
+                const alphaImg = alphaTex.image;
+                const w = colorImg.width;
+                const h = colorImg.height;
+
+                const colorCanvas = document.createElement('canvas');
+                colorCanvas.width = w;
+                colorCanvas.height = h;
+                const colorCtx = colorCanvas.getContext('2d', { willReadFrequently: true });
+                colorCtx.drawImage(colorImg, 0, 0, w, h);
+                const colorData = colorCtx.getImageData(0, 0, w, h);
+
+                const alphaCanvas = document.createElement('canvas');
+                alphaCanvas.width = w;
+                alphaCanvas.height = h;
+                const alphaCtx = alphaCanvas.getContext('2d', { willReadFrequently: true });
+                alphaCtx.drawImage(alphaImg, 0, 0, w, h);
+                const alphaData = alphaCtx.getImageData(0, 0, w, h);
+
+                // Detect: alpha in alpha channel or in RGB luminance?
+                let hasAlphaChannel = false;
+                for (let i = 3; i < alphaData.data.length; i += 4) {
+                    if (alphaData.data[i] < 250) { hasAlphaChannel = true; break; }
+                }
+
+                console.log('Hair alpha source:', hasAlphaChannel ? 'Alpha channel' : 'RGB luminance');
+
+                for (let i = 0; i < colorData.data.length; i += 4) {
+                    if (hasAlphaChannel) {
+                        colorData.data[i + 3] = alphaData.data[i + 3];
+                    } else {
+                        colorData.data[i + 3] = Math.round(
+                            alphaData.data[i] * 0.299 +
+                            alphaData.data[i + 1] * 0.587 +
+                            alphaData.data[i + 2] * 0.114
+                        );
+                    }
+                }
+
+                colorCtx.putImageData(colorData, 0, 0);
+
+                const merged = new THREE.CanvasTexture(colorCanvas);
+                merged.colorSpace = THREE.SRGBColorSpace;
+                merged.flipY = colorTex.flipY;
+                merged.wrapS = colorTex.wrapS;
+                merged.wrapT = colorTex.wrapT;
+                merged.needsUpdate = true;
+                resolve(merged);
+            });
+        }
+
+        // ── Load Avatar ──
+        const loader = new GLTFLoader();
+        loader.load('./avatar/men/men.gltf', async (gltf) => {
+            const model = gltf.scene;
+            scene.add(model);
+
+            // Find camera from scene graph
+            model.traverse((child) => {
+                if (child.isCamera) {
+                    camera = child;
+                    camera.aspect = window.innerWidth / window.innerHeight;
+                    camera.updateProjectionMatrix();
+                    console.log('Camera found:', child.name);
+                }
+            });
+
+            // Convert materials to unlit
+            const hairMeshes = [];
+            model.traverse((child) => {
+                if (!child.isMesh) return;
+                const old = child.material;
+                const materialName = old.name || '';
+
+                const isHair = materialName.toLowerCase().includes('cheveux') ||
+                               (old.transparent && old.emissiveMap && old.map);
+
+                if (isHair) {
+                    hairMeshes.push({ mesh: child, oldMat: old });
+                    child.visible = false;
+                } else {
+                    const tex = old.emissiveMap || old.map;
+                    if (tex) tex.colorSpace = THREE.SRGBColorSpace;
+                    child.material = new THREE.MeshBasicMaterial({
+                        map: tex,
+                        side: old.side || THREE.FrontSide,
+                    });
+                }
+
+                child.frustumCulled = false;
+
+                if (child.morphTargetDictionary && Object.keys(child.morphTargetDictionary).length > 0) {
+                    lipsyncMesh = child;
+                    morphDict = child.morphTargetDictionary;
+                    console.log('Morph targets found on:', child.name);
+                    console.log('Available shape keys (' + Object.keys(morphDict).length + '):', Object.keys(morphDict).join(', '));
+
+                    // Diagnostic: check which idle keys are available
+                    const idleCheck = IDLE_FACE_KEYS.map(k => `${k}: ${morphDict[k] !== undefined ? 'OK' : 'MISSING'}`);
+                    console.log('Idle face keys check:', idleCheck.join(', '));
+                }
+            });
+
+            // Process hair: color from COMBINED (emissiveMap), alpha from EMIT (map/baseColor)
+            for (const { mesh, oldMat } of hairMeshes) {
+                const colorTexture = oldMat.emissiveMap; // COMBINED = visual color
+                const alphaTexture = oldMat.map;          // EMIT = has alpha mask
+
+                if (colorTexture && alphaTexture) {
+                    console.log('Hair: color from emissiveMap, alpha from baseColorTexture');
+                    const mergedTex = await mergeColorAndAlpha(colorTexture, alphaTexture);
+                    mesh.material = new THREE.MeshBasicMaterial({
+                        map: mergedTex,
+                        transparent: true,
+                        alphaTest: 0.15,
+                        depthWrite: true,
+                        side: THREE.DoubleSide,
+                    });
+                } else {
+                    const tex = colorTexture || alphaTexture;
+                    mesh.material = new THREE.MeshBasicMaterial({
+                        map: tex,
+                        transparent: true,
+                        alphaTest: 0.15,
+                        side: THREE.DoubleSide,
+                    });
+                }
+                mesh.visible = true;
+                mesh.renderOrder = 1;
+            }
+
+            // ── Find head bone for procedural head drift ──
+            model.traverse((child) => {
+                if (child.isBone) {
+                    const n = child.name.toLowerCase();
+                    if (n === 'head' || n.includes('head') && !n.includes('headtop')) {
+                        headBone = child;
+                        headBoneRestQuat.copy(child.quaternion);
+                        console.log('Head bone found:', child.name);
+                    }
+                }
+            });
+
+            // ── Strip conflicting morph tracks from animations ──
+            // We manually control these shape keys for idle face & lipsync.
+            // If the animation also has tracks for them, the mixer overwrites
+            // our values every frame. Solution: remove those tracks.
+            const manuallyControlledKeys = [
+                // Idle micro-expressions (we set these manually)
+                'Mouth_Smile_L', 'Mouth_Smile_R',
+                'Mouth_Roll_In_Lower', 'Mouth_Close',
+                'Brow_Raise_Outer_L', 'Brow_Raise_Outer_R',
+                'Cheek_Puff_L', 'Cheek_Puff_R',
+                'Eye_Blink', 'Eye_Blink_L', 'Eye_Blink_R',
+                'Eye_L_Look_Down', 'Eye_R_Look_Down',
+                // All viseme shape keys (controlled by lipsync)
+                ...ALL_VISEME_KEYS,
+            ];
+
+            function stripConflictingTracks(clip) {
+                if (!clip) return;
+                const before = clip.tracks.length;
+                clip.tracks = clip.tracks.filter(track => {
+                    // Track names look like "meshName.morphTargetInfluences[shapekeyName]"
+                    return !manuallyControlledKeys.some(key => track.name.includes(key));
+                });
+                console.log(`Animation "${clip.name}": ${before} tracks -> ${clip.tracks.length} (removed ${before - clip.tracks.length} conflicting)`);
+            }
+
+            // Animations
+            mixer = new THREE.AnimationMixer(model);
+            const idleClip = gltf.animations.find(a => a.name === 'idle');
+            const parleClip = gltf.animations.find(a => a.name === 'parle');
+
+            // Strip BEFORE creating actions (important!)
+            stripConflictingTracks(idleClip);
+            stripConflictingTracks(parleClip);
+
+            if (idleClip) {
+                idleAction = mixer.clipAction(idleClip);
+                idleAction.play();
+            }
+            if (parleClip) {
+                parleAction = mixer.clipAction(parleClip);
+                parleAction.setLoop(THREE.LoopRepeat);
+                parleAction.clampWhenFinished = false;
+                parleAction.weight = 0;
+                parleAction.play();
+            }
+
+            // Init blink timer
+            scheduleNextBlink();
+
+            // Init wiggle bones sur les cheveux
+            initWiggleBones(model);
+
+            setStatus('Pret');
+        },
+        (progress) => {
+            const pct = progress.total ? Math.round(progress.loaded / progress.total * 100) : '...';
+            setStatus(`Chargement ${pct}%`);
+        },
+        (err) => {
+            console.error('Erreur chargement modele:', err);
+            setStatus('Erreur de chargement');
+        });
+
+        // ── Animation blending: idle <-> parle ──
+        function setTalking(talking) {
+            if (!idleAction || !parleAction) return;
+            const duration = 0.4;
+            if (talking) {
+                parleAction.reset();
+                parleAction.setEffectiveWeight(1);
+                parleAction.crossFadeFrom(idleAction, duration, true);
+            } else {
+                idleAction.reset();
+                idleAction.setEffectiveWeight(1);
+                idleAction.crossFadeFrom(parleAction, duration, true);
+            }
+        }
+
+        // ── Azure TTS ──
+        async function speak(text) {
+            if (isSpeaking) return;
+            setStatus('Synthese vocale...');
+
+            const ssml = `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='fr-FR'>
+  <voice name='${VOICE_NAME}'>${escapeXml(text)}</voice>
+</speak>`;
+
+            try {
+                const response = await fetch(`${TTS_ENDPOINT}/cognitiveservices/v1`, {
+                    method: 'POST',
+                    headers: {
+                        'Ocp-Apim-Subscription-Key': SPEECH_KEY,
+                        'Content-Type': 'application/ssml+xml',
+                        'X-Microsoft-OutputFormat': 'audio-48khz-192kbitrate-mono-mp3',
+                    },
+                    body: ssml,
+                });
+
+                if (!response.ok) throw new Error(`TTS Error: ${response.status}`);
+
+                const audioBlob = await response.blob();
+                const audioUrl = URL.createObjectURL(audioBlob);
+                PERF.audioReadyTime = performance.now();
+                if (lastAudioUrl) URL.revokeObjectURL(lastAudioUrl);
+                lastAudioUrl = audioUrl;
+                await playAudioWithLipsync(audioUrl);
+
+            } catch (err) {
+                console.error('TTS error:', err);
+                isSpeaking = false;
+                setTalking(false);
+                setStatus('Erreur TTS');
+                addMessage('Erreur de synthese vocale: ' + err.message, 'avatar');
+            }
+        }
+
+        function playAudioWithLipsync(audioUrl) {
+            audioEl.src = audioUrl;
+            if (!lipsyncConnected) {
+                lipsync.connectAudio(audioEl);
+                lipsyncConnected = true;
+            }
+            return new Promise((resolve) => {
+                audioEl.onplaying = () => {
+                    if (PERF.audioReadyTime) {
+                        PERF.lipsyncReadyMs = Math.round(performance.now() - PERF.audioReadyTime);
+                        PERF.audioReadyTime = 0;
+                    }
+                    isSpeaking = true;
+                    setTalking(true);
+                    setStatus('Parle...');
+                };
+                audioEl.onended = () => {
+                    isSpeaking = false;
+                    setTalking(false);
+                    setStatus('Pret');
+                    resolve();
+                };
+                audioEl.play();
+            });
+        }
+
+        // ══════════════════════════════════════════════════════════
+        // WIGGLE BONES — Physique de cheveux (cheveux_Baked uniquement)
+        // Structure :
+        //   hair.001 (L0) → Bone.005 (L1) → Bone.009 (L2)
+        //   hair.002 (L0) → Bone.003 (L1)
+        //   hair.003 (L0) → Bone.001 (L1)
+        //   hair.004 (L0) → Bone.007 (L1) → Bone.008 (L2)
+        // ══════════════════════════════════════════════════════════
+        function initWiggleBones(model) {
+
+            // Arbre des branches capillaires avec profondeur (level)
+            const HAIR_BONES = [
+                // Branche 1
+                { name: 'hair.001', level: 0 },
+                { name: 'Bone.005', level: 1 },
+                { name: 'Bone.009', level: 2 },
+                // Branche 2
+                { name: 'hair.002', level: 0 },
+                { name: 'Bone.003', level: 1 },
+                // Branche 3
+                { name: 'hair.003', level: 0 },
+                { name: 'Bone.001', level: 1 },
+                // Branche 4
+                { name: 'hair.004', level: 0 },
+                { name: 'Bone.007', level: 1 },
+                { name: 'Bone.008', level: 2 },
+            ];
+
+            // Paramètres par niveau de profondeur
+            // velocity (0→1) : vitesse de retour au repos. Plus haut = plus rigide.
+            // maxStretch (0→1) : élongation max. Plus haut = plus souple.
+            // L0 : racines — quasi-rigides, rotation seule
+            // L1 : niveau intermédiaire
+            // L2 : extrémités — très souples
+            const LEVEL_PARAMS = [
+                { velocity: 0.9,  maxStretch: 0.02 }, // L0 – racines (quasi-rigides)
+                { velocity: 0.5,  maxStretch: 0.08 }, // L1
+                { velocity: 0.15, maxStretch: 0.15 }, // L2 – extrémités (très souples)
+            ];
+
+            const report = [];
+
+            for (const { name, level } of HAIR_BONES) {
+                const bone = model.getObjectByName(name);
+
+                if (!bone) {
+                    console.warn(`[WiggleBone] Bone "${name}" introuvable dans le modèle.`);
+                    continue;
+                }
+
+                const params = LEVEL_PARAMS[level];
+
+                // WiggleBone modifie principalement la rotation (quaternion-based).
+                // La translation est contrainte via maxStretch.
+                // On verrouille aussi manuellement la position locale des racines.
+                const wb = new WiggleBone(bone, {
+                    velocity   : params.velocity,
+                    maxStretch : params.maxStretch,
+                });
+
+                wiggleBones.push(wb);
+
+                // Verrou de position pour les bones racines (L0)
+                if (level === 0) {
+                    hairRootLocalPos.set(bone, bone.position.clone());
+                }
+
+                report.push(`  • ${name.padEnd(10)} L${level}  velocity=${params.velocity}  maxStretch=${params.maxStretch}`);
+            }
+
+            console.log(`[WiggleBone] ✅ ${wiggleBones.length} bones initialisés sur cheveux_Baked :`);
+            report.forEach(line => console.log(line));
+        }
+
+        function escapeXml(str) {
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                      .replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+        }
+
+        // ── Render Loop ──
+        function animate() {
+            requestAnimationFrame(animate);
+            const dt = clock.getDelta();
+            elapsedTime += dt;
+
+            if (mixer) mixer.update(dt);
+
+            // Hair wiggle bones — après le mixer pour lire les bons world matrices
+            if (wiggleBones.length) {
+                wiggleBones.forEach(wb => wb.update());
+                // Verrouillage position locale des bones racines (translation constraint)
+                for (const [bone, restPos] of hairRootLocalPos) {
+                    bone.position.copy(restPos);
+                }
+            }
+
+            // Lipsync (always runs — handles both speaking & silence reset)
+            applyLipsync();
+
+            // Idle face animations (blink always, others only when not speaking)
+            updateBlink();
+            updateMicroExpressions();
+            updateBreathing();
+            updateHeadDrift();
+
+            renderer.render(scene, camera);
+
+            // ── Perf panel update ──
+            if (PERF.showPerf) {
+                PERF.frameCount++;
+                const now = performance.now();
+                if (now - PERF.lastFpsTime >= 500) {
+                    PERF.fps = Math.round(PERF.frameCount * 1000 / (now - PERF.lastFpsTime));
+                    PERF.frameCount = 0;
+                    PERF.lastFpsTime = now;
+                    document.getElementById('perf-fps').textContent = `FPS: ${PERF.fps}`;
+                    document.getElementById('perf-gpt').textContent = `GPT: ${PERF.gptMs}ms`;
+                    document.getElementById('perf-tts').textContent = `TTS: ${PERF.ttsMs}ms`;
+                    document.getElementById('perf-lipsync').textContent = `Lip Delay: ${PERF.lipsyncReadyMs}ms`;
+                    const v = lipsync.viseme || 'sil';
+                    const vol = lipsync.features ? (lipsync.features.volume * 100).toFixed(0) : '0';
+                    document.getElementById('perf-viseme').textContent = `Viseme: ${v.replace('viseme_','')}`;
+                    document.getElementById('perf-volume').textContent = `Volume: ${vol}%`;
+                }
+            }
+        }
+        animate();
+
+        // ── Resize ──
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // ── Chat UI ──
+        const chatInput = document.getElementById('chat-input');
+        const sendBtn = document.getElementById('send-btn');
+        const chatMessages = document.getElementById('chat-messages');
+
+        function addMessage(text, type) {
+            const div = document.createElement('div');
+            div.className = `message ${type}`;
+            div.textContent = text;
+            chatMessages.appendChild(div);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        async function handleSend() {
+            const text = chatInput.value.trim();
+            if (!text || isSpeaking) return;
+            if (!GPT_KEY || !SPEECH_KEY) {
+                addMessage('Veuillez renseigner vos cles API dans les parametres (roue dentee en haut a gauche).', 'avatar');
+                return;
+            }
+            chatInput.value = '';
+            addMessage(text, 'user');
+            sendBtn.disabled = true;
+            setStatus('Reflexion...');
+
+            try {
+                const gptStart = performance.now();
+                const aiReply = await getAIResponse(text);
+                PERF.gptMs = Math.round(performance.now() - gptStart);
+                addMessage(aiReply, 'avatar');
+                const ttsStart = performance.now();
+                await speak(aiReply);
+                PERF.ttsMs = Math.round(performance.now() - ttsStart);
+            } catch (err) {
+                console.error('Chat error:', err);
+                addMessage('Oups, erreur: ' + err.message, 'avatar');
+                setStatus('Pret');
+            }
+
+            sendBtn.disabled = false;
+            chatInput.focus();
+        }
+
+        sendBtn.addEventListener('click', handleSend);
+        chatInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleSend(); });
+
+        function setStatus(text) {
+            document.getElementById('status').textContent = text;
+        }
+
+        // ── Settings Panel ──
+        const settingsToggle = document.getElementById('settings-toggle');
+        const settingsPanel = document.getElementById('settings-panel');
+        const DEFAULTS = { ...CONFIG };
+
+        settingsToggle.addEventListener('click', () => {
+            settingsPanel.classList.toggle('visible');
+            settingsToggle.classList.toggle('open');
+        });
+
+        // Toggle perf panel
+        document.getElementById('toggle-perf').addEventListener('change', (ev) => {
+            PERF.showPerf = ev.target.checked;
+            document.getElementById('perf-panel').style.display = ev.target.checked ? 'block' : 'none';
+            document.getElementById('status').style.display = ev.target.checked ? 'none' : 'block';
+        });
+
+        // ── API key inputs ──
+        function updateApiKeyStatus() {
+            const speechEl = document.getElementById('status-speech-key');
+            const gptEl = document.getElementById('status-gpt-key');
+            if (SPEECH_KEY) { speechEl.textContent = '\u2713'; speechEl.className = 'api-status ok'; }
+            else { speechEl.innerHTML = '&#10007;'; speechEl.className = 'api-status missing'; }
+            if (GPT_KEY) { gptEl.textContent = '\u2713'; gptEl.className = 'api-status ok'; }
+            else { gptEl.innerHTML = '&#10007;'; gptEl.className = 'api-status missing'; }
+        }
+
+        const inputSpeechKey = document.getElementById('input-speech-key');
+        const inputGptKey = document.getElementById('input-gpt-key');
+        inputSpeechKey.value = SPEECH_KEY;
+        inputGptKey.value = GPT_KEY;
+        updateApiKeyStatus();
+
+        inputSpeechKey.addEventListener('input', () => {
+            SPEECH_KEY = inputSpeechKey.value.trim();
+            localStorage.setItem('avatar_speech_key', SPEECH_KEY);
+            updateApiKeyStatus();
+        });
+        inputGptKey.addEventListener('input', () => {
+            GPT_KEY = inputGptKey.value.trim();
+            localStorage.setItem('avatar_gpt_key', GPT_KEY);
+            updateApiKeyStatus();
+        });
+
+        // Connect all sliders to CONFIG
+        settingsPanel.querySelectorAll('input[type="range"]').forEach(slider => {
+            const param = slider.dataset.param;
+            const valSpan = slider.nextElementSibling;
+            slider.addEventListener('input', () => {
+                const v = parseFloat(slider.value);
+                CONFIG[param] = v;
+                valSpan.textContent = v.toFixed(2).replace(/\.?0+$/, '') || '0';
+            });
+        });
+
+        // Replay last audio
+        document.getElementById('btn-replay').addEventListener('click', async () => {
+            if (!lastAudioUrl || isSpeaking) return;
+            await playAudioWithLipsync(lastAudioUrl);
+        });
+
+        // Reset all to defaults
+        document.getElementById('btn-reset').addEventListener('click', () => {
+            Object.assign(CONFIG, DEFAULTS);
+            settingsPanel.querySelectorAll('input[type="range"]').forEach(slider => {
+                const param = slider.dataset.param;
+                slider.value = CONFIG[param];
+                slider.nextElementSibling.textContent =
+                    CONFIG[param].toFixed(2).replace(/\.?0+$/, '') || '0';
+            });
+        });
+
+        // Copy config to clipboard
+        document.getElementById('btn-copy').addEventListener('click', () => {
+            const configStr = JSON.stringify(CONFIG, null, 4);
+            navigator.clipboard.writeText(configStr).then(() => {
+                const toast = document.getElementById('copy-toast');
+                toast.classList.add('show');
+                setTimeout(() => toast.classList.remove('show'), 1500);
+            });
+        });
+    </script>
+</body>
+</html>
