@@ -766,10 +766,11 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
             const cfg = CONFIG;
             const smile = cfg.smileIntensity;
 
-            // Sourire permanent (actif meme en parlant)
+            // En parlant : relacher le sourire vers 0 pour liberer le lipsync
             if (isSpeaking) {
-                setMorph('Mouth_Smile_L', smile);
-                setMorph('Mouth_Smile_R', smile);
+                lerpMorph('Mouth_Smile_L', 0, 0.1);
+                lerpMorph('Mouth_Smile_R', 0, 0.1);
+                lerpMorph('Mouth_Roll_In_Lower', 0, 0.1);
                 return;
             }
 
