@@ -167,7 +167,6 @@
             border: none;
             background: rgba(255,255,255,0.08);
             color: rgba(255,255,255,0.85);
-            font-size: 16px;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -177,6 +176,28 @@
         }
         #btn-cam-switch:hover { background: rgba(255,255,255,0.15); }
         #btn-cam-switch.cam-b { background: rgba(59,130,246,0.35); }
+
+        #btn-fullscreen {
+            position: fixed;
+            top: 16px;
+            left: 100px;
+            width: 34px; height: 34px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255,255,255,0.08);
+            color: rgba(255,255,255,0.85);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+            z-index: 20;
+        }
+        #btn-fullscreen:hover { background: rgba(255,255,255,0.15); }
+        #btn-fullscreen .icon-exit { display: none; }
+        #btn-fullscreen.is-fullscreen .icon-enter { display: none; }
+        #btn-fullscreen.is-fullscreen .icon-exit { display: block; }
+        #btn-fullscreen.ios-hint { background: rgba(255,193,7,0.25); }
 
         #settings-toggle {
             position: fixed;
@@ -480,6 +501,53 @@
             opacity: 1;
             transform: translateX(-50%) translateY(0);
         }
+
+        /* ── Responsive mobile / tablette ── */
+        @media (max-width: 600px) {
+            #settings-panel {
+                width: calc(100vw - 24px);
+                left: 12px;
+                top: 58px;
+                max-height: calc(100vh - 70px);
+            }
+            #chat-container {
+                width: calc(100vw - 24px);
+                bottom: 12px;
+            }
+            #chat-messages {
+                max-height: 150px;
+            }
+            #send-btn {
+                padding: 10px 14px;
+                font-size: 13px;
+            }
+            #btn-fullscreen {
+                left: 100px;
+            }
+        }
+
+        @media (max-width: 400px) {
+            #settings-panel {
+                width: calc(100vw - 16px);
+                left: 8px;
+            }
+            #chat-container {
+                width: calc(100vw - 16px);
+                bottom: 8px;
+            }
+            #settings-toggle { left: 8px; }
+            #btn-cam-switch  { left: 50px; }
+            #btn-fullscreen  { left: 92px; }
+        }
+
+        @media (min-width: 601px) and (max-width: 1024px) {
+            #settings-panel {
+                width: 340px;
+            }
+            #chat-container {
+                width: 460px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -489,7 +557,13 @@
 
     <!-- Settings Toggle + Panel -->
     <button id="settings-toggle" title="Lipsync Settings">&#9881;</button>
-    <button id="btn-cam-switch" title="Changer de camera">&#128247;</button>
+    <button id="btn-cam-switch" title="Changer de camera">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/></svg>
+    </button>
+    <button id="btn-fullscreen" title="Plein ecran">
+        <svg class="icon-enter" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+        <svg class="icon-exit" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="10" y1="14" x2="3" y2="21"/><line x1="21" y1="3" x2="14" y2="10"/></svg>
+    </button>
     <div id="settings-panel">
         <h3>Tuning Avatar</h3>
 
@@ -2209,6 +2283,55 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
                 valSpan.textContent = v.toFixed(2).replace(/\.?0+$/, '') || '0';
             });
         });
+
+        // ── Fullscreen button ──
+        (function() {
+            const btn = document.getElementById('btn-fullscreen');
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+            function isFullscreen() {
+                return !!(document.fullscreenElement || document.webkitFullscreenElement ||
+                          document.mozFullScreenElement || document.msFullscreenElement);
+            }
+
+            function enterFullscreen() {
+                const el = document.documentElement;
+                if (el.requestFullscreen) el.requestFullscreen();
+                else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+                else if (el.mozRequestFullScreen) el.mozRequestFullScreen();
+                else if (el.msRequestFullscreen) el.msRequestFullscreen();
+            }
+
+            function exitFullscreen() {
+                if (document.exitFullscreen) document.exitFullscreen();
+                else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+                else if (document.mozCancelFullScreen) document.mozCancelFullScreen();
+                else if (document.msExitFullscreen) document.msExitFullscreen();
+            }
+
+            function showIOSHint() {
+                const toast = document.getElementById('copy-toast');
+                toast.textContent = 'Sur iPhone: partager ↑ → "Sur l\'ecran d\'accueil"';
+                toast.classList.add('show');
+                setTimeout(() => toast.classList.remove('show'), 3500);
+            }
+
+            btn.addEventListener('click', () => {
+                if (isIOS) { showIOSHint(); return; }
+                if (isFullscreen()) exitFullscreen();
+                else enterFullscreen();
+            });
+
+            function onFSChange() {
+                btn.classList.toggle('is-fullscreen', isFullscreen());
+            }
+            document.addEventListener('fullscreenchange', onFSChange);
+            document.addEventListener('webkitfullscreenchange', onFSChange);
+            document.addEventListener('mozfullscreenchange', onFSChange);
+            document.addEventListener('MSFullscreenChange', onFSChange);
+
+            if (isIOS) btn.title = 'Plein ecran (voir instructions)';
+        })();
 
         // ── Camera switch button ──
         document.getElementById('btn-cam-switch').addEventListener('click', () => {
