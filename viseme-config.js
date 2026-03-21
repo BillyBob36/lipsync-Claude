@@ -26,7 +26,7 @@ export const VISEME_DEFAULTS = {
         },
         {
             "shape": "V_Open",
-            "intensity": 0.15
+            "intensity": 0
         }
     ],
     "viseme_kk": [
@@ -54,45 +54,45 @@ export const VISEME_DEFAULTS = {
     "viseme_nn": [
         {
             "shape": "V_Tight_O",
-            "intensity": 0.7
+            "intensity": 0.9
         }
     ],
     "viseme_RR": [
         {
             "shape": "V_Lip_Open",
-            "intensity": 0.8
+            "intensity": 1
         }
     ],
     "viseme_aa": [
         {
             "shape": "V_Open",
-            "intensity": 0.5
+            "intensity": 0.3
         }
     ],
     "viseme_E": [
         {
             "shape": "V_Lip_Open",
-            "intensity": 0.7
+            "intensity": 0.95
         }
     ],
     "viseme_I": [
         {
             "shape": "V_Wide",
-            "intensity": 0.6
+            "intensity": 1.85
         },
         {
-            "shape": "V_Tight",
-            "intensity": 0.9
+            "shape": "V_Lip_Open",
+            "intensity": 0.75
         }
     ],
     "viseme_O": [
         {
             "shape": "V_Tight_O",
-            "intensity": 0.6
+            "intensity": 0.75
         },
         {
             "shape": "V_Open",
-            "intensity": 0.45
+            "intensity": 0.35
         }
     ],
     "viseme_U": [
