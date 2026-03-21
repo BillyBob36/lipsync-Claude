@@ -66,7 +66,7 @@ export const VISEME_DEFAULTS = {
     "viseme_aa": [
         {
             "shape": "V_Open",
-            "intensity": 1
+            "intensity": 0.5
         }
     ],
     "viseme_E": [

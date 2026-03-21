@@ -800,7 +800,9 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
         const clock = new THREE.Clock();
         let isSpeaking = false;
         let elapsedTime = 0;
-        let prevShapeKey = null;
+        let prevVisemeId = 'viseme_sil';
+        let visemeChangeTime = 0;
+        const morphSnapshot = {};
 
         // ── Viseme Preview Mode ──
         let visemePreviewMode = false;
@@ -1004,60 +1006,100 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
             lipsyncMesh.morphTargetInfluences[idx] = THREE.MathUtils.lerp(current, target, factor);
         }
 
+        // Helper: ease-out cubic — fast attack, smooth finish
+        function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+
         // ══════════════════════════════════════════════════════════
-        // LIPSYNC — multi-shape per viseme (from VISEME_MAP)
-        // 1. Reset all viseme shapes toward 0
-        // 2. Apply all shapes of the active viseme
-        // 3. Jaw procedural boost on open vowels
+        // LIPSYNC — time-based crossfade with ease-out
+        // On viseme change: snapshot morphs, crossfade to new target
         // ══════════════════════════════════════════════════════════
+        const MIN_VISEME_HOLD = 0.055; // secondes — durée min d'affichage d'un visème
+        let pendingViseme = null;
+
         function applyLipsync() {
             if (!lipsyncMesh) return;
             const cfg = CONFIG;
 
             if (isSpeaking) {
                 lipsync.processAudio();
-                const currentViseme = lipsync.viseme;
-                const shapes = VISEME_MAP[currentViseme] || [];
+                const detectedViseme = lipsync.viseme;
 
-                // 1. RESET — fermeture rapide de tous les visemes
-                for (const key of ALL_SHAPE_KEYS) {
-                    const idx = morphDict[key];
-                    if (idx === undefined) continue;
-                    const current = lipsyncMesh.morphTargetInfluences[idx] || 0;
-                    if (current > cfg.silenceThreshold) {
-                        lipsyncMesh.morphTargetInfluences[idx] = THREE.MathUtils.lerp(
-                            current, 0, cfg.lerpDecay
-                        );
+                // Buffer: on accepte un nouveau visème seulement si le hold min est passé
+                if (detectedViseme !== prevVisemeId) {
+                    const holdElapsed = elapsedTime - visemeChangeTime;
+                    if (holdElapsed >= MIN_VISEME_HOLD) {
+                        pendingViseme = detectedViseme;
+                    } else if (!pendingViseme) {
+                        pendingViseme = detectedViseme;
                     }
                 }
 
-                // 2. VISEME ACTIF — appliquer chaque shape de la composition
+                // Appliquer le changement quand le hold est écoulé
+                const activeViseme = (pendingViseme && (elapsedTime - visemeChangeTime) >= MIN_VISEME_HOLD)
+                    ? pendingViseme : prevVisemeId;
+
+                const shapes = VISEME_MAP[activeViseme] || [];
+
+                // Build target map pour ce viseme
+                const targetMap = {};
+                for (const key of ALL_SHAPE_KEYS) targetMap[key] = 0;
                 for (const { shape, intensity } of shapes) {
-                    const idx = morphDict[shape];
-                    if (idx === undefined) continue;
-                    const targetIntensity = Math.min(intensity * cfg.maxIntensity, 3.0);
-                    const current = lipsyncMesh.morphTargetInfluences[idx] || 0;
-                    lipsyncMesh.morphTargetInfluences[idx] = THREE.MathUtils.lerp(
-                        current, targetIntensity, cfg.lerpSpeed
-                    );
+                    targetMap[shape] = Math.min(intensity * cfg.maxIntensity, 3.0);
                 }
 
-                // 3. MACHOIRE PROCEDURALE — boost sur voyelles ouvertes
-                const isOpenVowel = currentViseme === 'viseme_aa' ||
-                                    currentViseme === 'viseme_E';
+                // Mâchoire procedurale — boost sur voyelles ouvertes
+                const isOpenVowel = activeViseme === 'viseme_aa' || activeViseme === 'viseme_E';
                 if (isOpenVowel) {
-                    const jawIdx = morphDict['V_Open'];
-                    if (jawIdx !== undefined) {
-                        const current = lipsyncMesh.morphTargetInfluences[jawIdx] || 0;
-                        const jawTarget = Math.min(cfg.jawBoost, 3.0);
-                        lipsyncMesh.morphTargetInfluences[jawIdx] = THREE.MathUtils.lerp(
-                            current, jawTarget, 0.4
-                        );
+                    const jawTarget = Math.min(cfg.jawBoost, 3.0);
+                    targetMap['V_Open'] = Math.max(targetMap['V_Open'] || 0, jawTarget);
+                }
+
+                // CHANGEMENT EFFECTIF DE VISEME → snapshot pour l'ease-in
+                if (activeViseme !== prevVisemeId) {
+                    for (const key of ALL_SHAPE_KEYS) {
+                        const idx = morphDict[key];
+                        if (idx !== undefined) {
+                            morphSnapshot[key] = lipsyncMesh.morphTargetInfluences[idx] || 0;
+                        }
+                    }
+                    visemeChangeTime = elapsedTime;
+                    prevVisemeId = activeViseme;
+                    pendingViseme = null;
+                }
+
+                // Progression du crossfade ease-out pour les shapes ENTRANTES
+                const transitionDur = 0.03 / cfg.lerpSpeed;
+                const rawT = Math.min(1.0, (elapsedTime - visemeChangeTime) / transitionDur);
+                const easedT = easeOutCubic(rawT);
+
+                // DUAL SPEED:
+                // - Shapes ENTRANTES (target > 0): ease-out depuis snapshot → target
+                // - Shapes SORTANTES (target = 0) : lerpDecay immédiat — bouche ferme vite
+                for (const key of ALL_SHAPE_KEYS) {
+                    const idx = morphDict[key];
+                    if (idx === undefined) continue;
+                    const target = targetMap[key] || 0;
+                    const current = lipsyncMesh.morphTargetInfluences[idx] || 0;
+
+                    if (target > 0) {
+                        // Ease-in depuis snapshot
+                        const from = morphSnapshot[key] !== undefined ? morphSnapshot[key] : 0;
+                        lipsyncMesh.morphTargetInfluences[idx] = from + (target - from) * easedT;
+                    } else {
+                        // Décay rapide et immédiat
+                        if (current > 0.005) {
+                            lipsyncMesh.morphTargetInfluences[idx] = THREE.MathUtils.lerp(
+                                current, 0, cfg.lerpDecay
+                            );
+                        } else {
+                            lipsyncMesh.morphTargetInfluences[idx] = 0;
+                        }
                     }
                 }
 
             } else {
-                // Silence: reset all viseme keys
+                // Silence: reset avec lerpDecay
+                prevVisemeId = 'viseme_sil';
                 for (const key of ALL_SHAPE_KEYS) {
                     const idx = morphDict[key];
                     if (idx === undefined) continue;
