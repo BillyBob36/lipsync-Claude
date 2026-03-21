@@ -137,6 +137,16 @@
             50% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
         }
         #mic-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        #mic-btn.connecting {
+            background: rgba(239, 168, 68, 0.85);
+            animation: mic-spin 1s linear infinite;
+            pointer-events: none;
+        }
+        @keyframes mic-spin {
+            0% { box-shadow: 0 0 0 3px rgba(239, 168, 68, 0.6), 0 0 0 6px transparent; }
+            50% { box-shadow: 0 0 0 3px transparent, 0 0 0 6px rgba(239, 168, 68, 0.4); }
+            100% { box-shadow: 0 0 0 3px rgba(239, 168, 68, 0.6), 0 0 0 6px transparent; }
+        }
 
         #status {
             position: fixed;
@@ -883,6 +893,12 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
         const headBoneRestQuat = new THREE.Quaternion();
         const clock = new THREE.Clock();
         let isSpeaking = false;
+        let _idleBlend = 1.0;
+        let _idleBlendTarget = 1.0;
+        const _IDLE_BLEND_SPEED = 1.0 / 0.8;
+        let _headDriftFactor = 1.0;
+        let _headDriftTarget = 1.0;
+        const _HEAD_DRIFT_SPEED = 1.0 / 0.5;
         let elapsedTime = 0;
         let prevVisemeId = 'viseme_sil';
         let visemeChangeTime = 0;
@@ -989,42 +1005,34 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
             if (!lipsyncMesh) return;
             const cfg = CONFIG;
             const smile = cfg.smileIntensity;
+            const ib = _idleBlend;     // 1 = full idle, 0 = full speaking
+            const sb = 1.0 - ib;       // speaking blend
 
-            // En parlant : garder sourire + sourcils acceleres x1.5, relacher lip roll
-            if (isSpeaking) {
-                setMorph('Mouth_Smile_L', smile);
-                setMorph('Mouth_Smile_R', smile);
-                lerpMorph('Mouth_Roll_In_Lower', 0, 0.1);
-                const ts = elapsedTime * cfg.microSpeed * 1.5;
-                setMorph('Brow_Raise_Outer_L',
-                    Math.max(0, Math.sin(ts * 0.17 + 0.5)) * cfg.microBrowAmp);
-                setMorph('Brow_Raise_Outer_R',
-                    Math.max(0, Math.sin(ts * 0.13 + 2.1)) * cfg.microBrowAmp * 0.7);
-                return;
-            }
+            const tIdle = elapsedTime * cfg.microSpeed;
+            const tSpeak = elapsedTime * cfg.microSpeed * 1.5;
 
-            const t = elapsedTime * cfg.microSpeed;
+            // Sourire: idle has micro-oscillation, speaking is flat
+            const smileIdleL = smile + 0.05 + Math.sin(tIdle * 0.23 + 0.0) * cfg.microMouthAmp * 0.6;
+            const smileIdleR = smile + 0.04 + Math.sin(tIdle * 0.19 + 1.2) * cfg.microMouthAmp * 0.5;
+            setMorph('Mouth_Smile_L', smileIdleL * ib + smile * sb);
+            setMorph('Mouth_Smile_R', smileIdleR * ib + smile * sb);
 
-            // Sourire + micro-expressions (asymmetric pour le realisme)
-            setMorph('Mouth_Smile_L',
-                smile + 0.05 + Math.sin(t * 0.23 + 0.0) * cfg.microMouthAmp * 0.6);
-            setMorph('Mouth_Smile_R',
-                smile + 0.04 + Math.sin(t * 0.19 + 1.2) * cfg.microMouthAmp * 0.5);
+            // Lip compression (idle only, fades out when speaking)
+            const lipRoll = Math.max(0, Math.sin(tIdle * 0.11 + 3.7)) * cfg.microMouthAmp * 0.4;
+            setMorph('Mouth_Roll_In_Lower', lipRoll * ib);
 
-            // Lip compression (thinking micro-expression)
-            const lipRoll = Math.max(0, Math.sin(t * 0.11 + 3.7)) * cfg.microMouthAmp * 0.4;
-            setMorph('Mouth_Roll_In_Lower', lipRoll);
+            // Brow raise (both modes, slightly different speed)
+            const browL = Math.max(0, Math.sin(tIdle * 0.17 + 0.5)) * cfg.microBrowAmp;
+            const browR = Math.max(0, Math.sin(tIdle * 0.13 + 2.1)) * cfg.microBrowAmp * 0.7;
+            const browSL = Math.max(0, Math.sin(tSpeak * 0.17 + 0.5)) * cfg.microBrowAmp;
+            const browSR = Math.max(0, Math.sin(tSpeak * 0.13 + 2.1)) * cfg.microBrowAmp * 0.7;
+            setMorph('Brow_Raise_Outer_L', browL * ib + browSL * sb);
+            setMorph('Brow_Raise_Outer_R', browR * ib + browSR * sb);
 
-            // Brow raise (curiosity/alertness, asymmetric)
-            setMorph('Brow_Raise_Outer_L',
-                Math.max(0, Math.sin(t * 0.17 + 0.5)) * cfg.microBrowAmp);
-            setMorph('Brow_Raise_Outer_R',
-                Math.max(0, Math.sin(t * 0.13 + 2.1)) * cfg.microBrowAmp * 0.7);
-
-            // Subtle cheek puff (very faint, adds life)
-            const cheek = Math.max(0, Math.sin(t * 0.07 + 5.0)) * 0.05;
-            setMorph('Cheek_Puff_L', cheek);
-            setMorph('Cheek_Puff_R', cheek * 0.8);
+            // Subtle cheek puff (idle only, fades out)
+            const cheek = Math.max(0, Math.sin(tIdle * 0.07 + 5.0)) * 0.05;
+            setMorph('Cheek_Puff_L', cheek * ib);
+            setMorph('Cheek_Puff_R', cheek * 0.8 * ib);
         }
 
         // ══════════════════════════════════════════════════════════
@@ -1038,10 +1046,8 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
             const breathPhase = Math.sin(elapsedTime * CONFIG.breathSpeed) * 0.5 + 0.5;
             const amp = CONFIG.breathAmplitude;
 
-            // Slight mouth open on exhale (only when not speaking)
-            if (!isSpeaking) {
-                setMorph('Mouth_Close', (1 - breathPhase) * amp * 0.3);
-            }
+            // Slight mouth open on exhale (scales down smoothly when speaking)
+            setMorph('Mouth_Close', (1 - breathPhase) * amp * 0.3 * _idleBlend);
         }
 
         // ══════════════════════════════════════════════════════════
@@ -1054,22 +1060,24 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
 
         function updateHeadDrift() {
             const t = elapsedTime;
-            const amp = isSpeaking ? CONFIG.headDriftAmp * 0.4 : CONFIG.headDriftAmp;
+            const baseAmp = THREE.MathUtils.lerp(CONFIG.headDriftAmp * 0.4, CONFIG.headDriftAmp, _idleBlend);
+            const amp = baseAmp * _headDriftFactor;
 
             // ── Head bone rotation (yaw, pitch, roll) ──
             if (headBone) {
-                const yaw   = Math.sin(t * 0.31) * amp;                      // slow turn
-                const pitch = Math.sin(t * 0.23 + 0.7) * amp * 0.5;         // slow nod
-                const roll  = Math.sin(t * 0.19 + 1.5) * amp * 0.3;         // slow tilt
+                const yaw   = Math.sin(t * 0.31) * amp;
+                const pitch = Math.sin(t * 0.23 + 0.7) * amp * 0.5;
+                const roll  = Math.sin(t * 0.19 + 1.5) * amp * 0.3;
                 _headEuler.set(pitch, yaw, roll);
                 _headQuat.setFromEuler(_headEuler);
                 _headQuat.premultiply(headBoneRestQuat);
-                headBone.quaternion.slerp(_headQuat, 0.05); // smooth transition
+                const slerpT = _headDriftFactor < 0.5 ? 0.15 : 0.05;
+                headBone.quaternion.slerp(_headQuat, slerpT);
             }
 
-            // ── Eye gaze shifts (shape keys) ──
-            if (lipsyncMesh && !isSpeaking) {
-                const gaze = Math.max(0, Math.sin(t * 0.13 + 0.7)) * 0.12;
+            // ── Eye gaze shifts (shape keys, fade out when speaking) ──
+            if (lipsyncMesh) {
+                const gaze = Math.max(0, Math.sin(t * 0.13 + 0.7)) * 0.12 * _idleBlend;
                 setMorph('Eye_L_Look_Down', gaze);
                 setMorph('Eye_R_Look_Down', gaze * 0.9);
             }
@@ -1477,7 +1485,9 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
         // ── Animation blending: idle <-> parle ──
         function setTalking(talking) {
             if (!idleAction || !parleAction) return;
-            const duration = 0.4;
+            const duration = 0.8;
+            _idleBlendTarget = talking ? 0.0 : 1.0;
+            if (!talking) _headDriftTarget = 1.0;
             if (talking) {
                 parleAction.reset();
                 parleAction.setEffectiveWeight(1);
@@ -1564,6 +1574,8 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
         let rtIsVoiceMode = false;
         let rtAudioChunks = [];
         let rtTranscript = '';
+        let rtSilenceTimer = null;
+        const RT_SILENCE_TIMEOUT = 50000;
 
         async function startVoiceMode() {
             if (!GPT_KEY) {
@@ -1571,11 +1583,16 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
                 return;
             }
             const micBtn = document.getElementById('mic-btn');
+            micBtn.classList.add('connecting');
+            micBtn.innerHTML = '&#8943;';
+            setStatus('Connexion...');
             try {
                 const wsUrl = `${RT_WS_BASE}?api-version=2024-10-01-preview&deployment=${RT_DEPLOYMENT}&api-key=${GPT_KEY}`;
                 rtWs = new WebSocket(wsUrl);
 
                 rtWs.onopen = () => {
+                    micBtn.classList.remove('connecting');
+                    micBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>';
                     rtWs.send(JSON.stringify({
                         type: 'session.update',
                         session: {
@@ -1599,22 +1616,35 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
                     document.getElementById('chat-input-container').classList.add('voice-mode');
                     document.getElementById('chat-messages').style.display = 'none';
                     setStatus('Ecoute...');
+                    resetSilenceTimer();
                 };
 
                 rtWs.onmessage = handleRealtimeEvent;
                 rtWs.onclose = () => stopVoiceMode(false);
                 rtWs.onerror = (err) => {
                     console.error('RT WS error:', err);
+                    micBtn.classList.remove('connecting');
+                    micBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>';
                     stopVoiceMode(false);
                     addMessage('Erreur connexion vocale.', 'avatar');
                 };
             } catch (err) {
                 console.error('Voice mode error:', err);
+                micBtn.classList.remove('connecting');
+                micBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>';
                 addMessage('Erreur: ' + err.message, 'avatar');
             }
         }
 
+        function resetSilenceTimer() {
+            if (rtSilenceTimer) clearTimeout(rtSilenceTimer);
+            rtSilenceTimer = setTimeout(() => {
+                if (rtIsVoiceMode && !isSpeaking) stopVoiceMode();
+            }, RT_SILENCE_TIMEOUT);
+        }
+
         function stopVoiceMode(closeWs = true) {
+            if (rtSilenceTimer) { clearTimeout(rtSilenceTimer); rtSilenceTimer = null; }
             rtIsVoiceMode = false;
             const micBtn = document.getElementById('mic-btn');
             micBtn.classList.remove('active');
@@ -1684,11 +1714,13 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
                     rtAudioChunks = [];
                     rtTranscript = '';
                     setStatus('Vous parlez...');
+                    resetSilenceTimer();
                     break;
 
                 case 'input_audio_buffer.speech_stopped':
                     PERF.rtSpeechEndTime = performance.now();
                     PERF.rtChunks = 0;
+                    _headDriftTarget = 0.0;
                     setStatus('Reflexion...');
                     break;
 
@@ -1712,6 +1744,7 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
                     break;
 
                 case 'response.audio.done':
+                    resetSilenceTimer();
                     playRealtimeAudio();
                     break;
 
@@ -1884,14 +1917,14 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
                       .replace(/"/g, '&quot;').replace(/'/g, '&apos;');
         }
 
-        // ── Render Loop (capped at 60 FPS) ──
+        // ── Render Loop (capped at 60 FPS via setAnimationLoop) ──
         const _fpsInterval = 1000 / 60;
-        let _lastFrameTime = performance.now();
+        let _lastRenderTime = 0;
         function animate(timestamp) {
-            requestAnimationFrame(animate);
-            const elapsed = timestamp - _lastFrameTime;
+            if (!timestamp) timestamp = performance.now();
+            const elapsed = timestamp - _lastRenderTime;
             if (elapsed < _fpsInterval) return;
-            _lastFrameTime = timestamp - (elapsed % _fpsInterval);
+            _lastRenderTime = timestamp - (elapsed % _fpsInterval);
             const dt = clock.getDelta();
             elapsedTime += dt;
 
@@ -1936,6 +1969,25 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
                 // Lipsync (always runs — handles both speaking & silence reset)
                 applyLipsync();
 
+                // Smooth idle blend transition (matches skeleton crossfade duration)
+                if (_idleBlend !== _idleBlendTarget) {
+                    const step = _IDLE_BLEND_SPEED * dt;
+                    if (_idleBlend < _idleBlendTarget) {
+                        _idleBlend = Math.min(_idleBlend + step, _idleBlendTarget);
+                    } else {
+                        _idleBlend = Math.max(_idleBlend - step, _idleBlendTarget);
+                    }
+                }
+                // Smooth head drift ramp (returns head to rest before speaking)
+                if (_headDriftFactor !== _headDriftTarget) {
+                    const hStep = _HEAD_DRIFT_SPEED * dt;
+                    if (_headDriftFactor < _headDriftTarget) {
+                        _headDriftFactor = Math.min(_headDriftFactor + hStep, _headDriftTarget);
+                    } else {
+                        _headDriftFactor = Math.max(_headDriftFactor - hStep, _headDriftTarget);
+                    }
+                }
+
                 // Idle face animations (blink always, others only when not speaking)
                 updateBlink();
                 updateMicroExpressions();
@@ -1973,7 +2025,15 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
                 }
             }
         }
-        animate();
+        renderer.setAnimationLoop(animate);
+
+        // ── Auto-disconnect voice mode on page close/hide ──
+        window.addEventListener('beforeunload', () => {
+            if (rtIsVoiceMode) stopVoiceMode();
+        });
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden && rtIsVoiceMode) stopVoiceMode();
+        });
 
         // ── Resize ──
         window.addEventListener('resize', () => {
@@ -2006,6 +2066,7 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
             chatInput.value = '';
             addMessage(text, 'user');
             sendBtn.disabled = true;
+            _headDriftTarget = 0.0;
             setStatus('Reflexion...');
 
             try {
