@@ -22,5 +22,7 @@ export const TUNING_DEFAULTS = {
     "breathAmplitude": 0.15,
     "breathSpeed": 3.6,
     "headDriftAmp": 0.3,
-    "hairFlex": 1
+    "hairFlex": 1,
+    "rtVoice": "ash",
+    "rtLang": "fr"
 };
