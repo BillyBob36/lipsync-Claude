@@ -957,10 +957,9 @@
             if (_iosAudioUnlocked) return;
             _iosAudioUnlocked = true;
 
-            // 1. Pre-connect lipsync → creates AudioContext during gesture
-            if (!lipsyncConnected) {
-                lipsync.connectAudio(audioEl);
-                lipsyncConnected = true;
+            // 1. Resume lipsync AudioContext during gesture (iOS requires gesture)
+            if (lipsync.audioContext && lipsync.audioContext.state === 'suspended') {
+                lipsync.audioContext.resume();
             }
 
             // 2. Play tiny silent WAV to unlock <audio> element on iOS
