@@ -1793,11 +1793,16 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
             updateApiKeyStatus();
         });
 
-        // Connect all tuning sliders to CONFIG
+        // Connect all tuning sliders to CONFIG + sync to tuning-config.js values on load
         document.getElementById('tab-tuning').querySelectorAll('input[type="range"]').forEach(slider => {
             const param = slider.dataset.param;
             if (!param) return;
             const valSpan = slider.nextElementSibling;
+            // Sync slider → CONFIG value from file (ignore hardcoded HTML value)
+            if (CONFIG[param] !== undefined) {
+                slider.value = CONFIG[param];
+                valSpan.textContent = CONFIG[param].toFixed(2).replace(/\.?0+$/, '') || '0';
+            }
             slider.addEventListener('input', () => {
                 const v = parseFloat(slider.value);
                 CONFIG[param] = v;
