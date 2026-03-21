@@ -569,14 +569,9 @@
 
         <!-- ── API KEYS (always visible above tabs) ── -->
         <div class="param-section">
-            <div class="param-section-title">Cles API (stockees localement)</div>
+            <div class="param-section-title">Cle API (stockee localement)</div>
             <div class="param-row">
-                <label title="Cle Azure Speech Services pour la synthese vocale (TTS).">Speech Key</label>
-                <input type="password" id="input-speech-key" placeholder="Coller la cle ici...">
-                <span class="api-status missing" id="status-speech-key">&#10007;</span>
-            </div>
-            <div class="param-row">
-                <label title="Cle Azure OpenAI pour GPT.">GPT Key</label>
+                <label title="Cle Azure OpenAI (utilisee pour GPT et audio).">API Key</label>
                 <input type="password" id="input-gpt-key" placeholder="Coller la cle ici...">
                 <span class="api-status missing" id="status-gpt-key">&#10007;</span>
             </div>
@@ -796,13 +791,11 @@
     <div id="perf-panel" style="display:none;position:fixed;top:16px;right:16px;z-index:20;background:rgba(0,0,0,0.75);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px 14px;font-family:Consolas,monospace;font-size:11px;color:rgba(255,255,255,0.7);min-width:200px;pointer-events:none;">
         <div style="color:rgba(255,255,255,0.4);font-size:9px;text-transform:uppercase;margin-bottom:6px;">Performance</div>
         <div id="perf-fps">FPS: --</div>
-        <div id="perf-gpt" class="perf-text-only" style="margin-top:3px;">GPT: --</div>
-        <div id="perf-tts" class="perf-text-only" style="margin-top:3px;">TTS: --</div>
-        <div id="perf-rt-latency" class="perf-voice-only" style="margin-top:3px;display:none;">RT Latency: --</div>
+        <div id="perf-rt-latency" style="margin-top:3px;">RT Latency: --</div>
         <div id="perf-lipsync" style="margin-top:3px;">Lip Delay: --</div>
         <div id="perf-viseme" style="margin-top:3px;">Viseme: --</div>
         <div id="perf-volume" style="margin-top:3px;">Volume: --</div>
-        <div id="perf-rt-chunks" class="perf-voice-only" style="margin-top:3px;display:none;">RT Chunks: --</div>
+        <div id="perf-rt-chunks" style="margin-top:3px;">RT Chunks: --</div>
     </div>
 
     <div id="chat-container">
@@ -835,16 +828,8 @@
         import { TUNING_DEFAULTS } from 'tuning-config';
         import { VISEME_DEFAULTS, ALL_SHAPE_KEYS, VISEME_LABELS } from 'viseme-config';
 
-        // ── Azure TTS Config ──
-        let SPEECH_KEY = localStorage.getItem('avatar_speech_key') || '';
-        const TTS_ENDPOINT = 'https://westeurope.tts.speech.microsoft.com';
-        const VOICE_NAME = 'fr-FR-RemyMultilingualNeural';
-
-        // ── Azure OpenAI (GPT-5.2) Config ──
-        const GPT_ENDPOINT = 'https://johann-api-resource.cognitiveservices.azure.com/';
+        // ── Azure OpenAI Config (single key for all) ──
         let GPT_KEY = localStorage.getItem('avatar_gpt_key') || '';
-        const GPT_DEPLOYMENT = 'gpt-5.2';
-        const GPT_API_VERSION = '2024-12-01-preview';
 
         // ── Azure OpenAI Realtime (gpt-realtime-1.5) Config ──
         const RT_DEPLOYMENT = 'gpt-realtime-1.5';
@@ -858,33 +843,7 @@
             de: `Du bist ein lustiger und entspannter virtueller Assistent. Du sprichst natuerlich, mit Humor und freundlichem Ton, wie ein Kumpel. Deine Antworten sind KURZ (2-3 Saetze max). Antworte immer auf Deutsch.`,
         };
 
-        const conversationHistory = [
-            {
-                role: 'system',
-                content: `Tu es un assistant virtuel fun et decontracte. Tu parles de maniere naturelle, avec de l'humour et un ton amical, comme un pote.
-Tes reponses sont COURTES (2-3 phrases max) car elles seront prononcees a voix haute par un avatar.
-Pas de listes, pas de markdown, pas de bullet points, pas d'emojis. Juste du texte naturel parle.
-Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujours en francais.`
-            }
-        ];
-
-        async function getAIResponse(userMessage) {
-            conversationHistory.push({ role: 'user', content: userMessage });
-            const response = await fetch(
-                `${GPT_ENDPOINT}openai/deployments/${GPT_DEPLOYMENT}/chat/completions?api-version=${GPT_API_VERSION}`,
-                {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'api-key': GPT_KEY },
-                    body: JSON.stringify({ messages: conversationHistory, max_completion_tokens: 200 }),
-                }
-            );
-            if (!response.ok) throw new Error(`GPT Error: ${response.status}`);
-            const data = await response.json();
-            const reply = data.choices[0].message.content;
-            conversationHistory.push({ role: 'assistant', content: reply });
-            if (conversationHistory.length > 21) conversationHistory.splice(1, 2);
-            return reply;
-        }
+        // (GPT chat completions removed — all responses via gpt-realtime-1.5 WS)
 
         // ══════════════════════════════════════════════════════════
         // CONFIGURATION GLOBALE (from tuning-config.js)
@@ -949,8 +908,6 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
             fps: 0,
             frameCount: 0,
             lastFpsTime: 0,
-            gptMs: 0,
-            ttsMs: 0,
             lipsyncReadyMs: 0,
             audioReadyTime: 0,
             showPerf: false,
@@ -1573,43 +1530,7 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
             }
         }
 
-        // ── Azure TTS ──
-        async function speak(text) {
-            if (isSpeaking) return;
-            setStatus('Synthese vocale...');
-
-            const ssml = `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='fr-FR'>
-  <voice name='${VOICE_NAME}'>${escapeXml(text)}</voice>
-</speak>`;
-
-            try {
-                const response = await fetch(`${TTS_ENDPOINT}/cognitiveservices/v1`, {
-                    method: 'POST',
-                    headers: {
-                        'Ocp-Apim-Subscription-Key': SPEECH_KEY,
-                        'Content-Type': 'application/ssml+xml',
-                        'X-Microsoft-OutputFormat': 'audio-48khz-192kbitrate-mono-mp3',
-                    },
-                    body: ssml,
-                });
-
-                if (!response.ok) throw new Error(`TTS Error: ${response.status}`);
-
-                const audioBlob = await response.blob();
-                const audioUrl = URL.createObjectURL(audioBlob);
-                PERF.audioReadyTime = performance.now();
-                if (lastAudioUrl) URL.revokeObjectURL(lastAudioUrl);
-                lastAudioUrl = audioUrl;
-                await playAudioWithLipsync(audioUrl);
-
-            } catch (err) {
-                console.error('TTS error:', err);
-                isSpeaking = false;
-                setTalking(false);
-                setStatus('Erreur TTS');
-                addMessage('Erreur de synthese vocale: ' + err.message, 'avatar');
-            }
-        }
+        // (Azure TTS removed — audio now comes from gpt-realtime-1.5)
 
         function playAudioWithLipsync(audioUrl) {
             audioEl.src = audioUrl;
@@ -1630,7 +1551,7 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
                 audioEl.onended = () => {
                     isSpeaking = false;
                     setTalking(false);
-                    setStatus('Pret');
+                    setStatus(rtIsVoiceMode ? 'Ecoute...' : 'Pret');
                     resolve();
                 };
                 audioEl.play();
@@ -1650,23 +1571,19 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
         let rtTranscript = '';
         let rtSilenceTimer = null;
         const RT_SILENCE_TIMEOUT = 50000;
+        let _rtConnectPromise = null;
+        let _pendingTextResolve = null;
+        const MIC_SVG = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>';
 
-        async function startVoiceMode() {
-            if (!GPT_KEY) {
-                addMessage('Renseignez votre cle GPT dans les parametres.', 'avatar');
-                return;
-            }
-            const micBtn = document.getElementById('mic-btn');
-            micBtn.classList.add('connecting');
-            micBtn.innerHTML = '&#8943;';
-            setStatus('Connexion...');
-            try {
+        function ensureRtConnection() {
+            if (rtWs && rtWs.readyState === WebSocket.OPEN) return Promise.resolve();
+            if (_rtConnectPromise) return _rtConnectPromise;
+
+            _rtConnectPromise = new Promise((resolve, reject) => {
                 const wsUrl = `${RT_WS_BASE}?api-version=2024-10-01-preview&deployment=${RT_DEPLOYMENT}&api-key=${GPT_KEY}`;
                 rtWs = new WebSocket(wsUrl);
 
                 rtWs.onopen = () => {
-                    micBtn.classList.remove('connecting');
-                    micBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>';
                     rtWs.send(JSON.stringify({
                         type: 'session.update',
                         session: {
@@ -1684,29 +1601,56 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
                             }
                         }
                     }));
-                    startMicCapture();
-                    rtIsVoiceMode = true;
-                    micBtn.classList.add('active');
-                    document.getElementById('chat-input-container').classList.add('voice-mode');
-                    document.getElementById('chat-messages').style.display = 'none';
-                    setStatus('Ecoute...');
-                    resetSilenceTimer();
+                    _rtConnectPromise = null;
+                    resolve();
                 };
 
                 rtWs.onmessage = handleRealtimeEvent;
-                rtWs.onclose = () => stopVoiceMode(false);
+                rtWs.onclose = () => {
+                    rtWs = null;
+                    _rtConnectPromise = null;
+                    if (rtIsVoiceMode) stopVoiceMode(false);
+                    if (_pendingTextResolve) {
+                        _pendingTextResolve = null;
+                    }
+                };
                 rtWs.onerror = (err) => {
                     console.error('RT WS error:', err);
-                    micBtn.classList.remove('connecting');
-                    micBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>';
-                    stopVoiceMode(false);
-                    addMessage('Erreur connexion vocale.', 'avatar');
+                    rtWs = null;
+                    _rtConnectPromise = null;
+                    reject(err);
                 };
+            });
+
+            return _rtConnectPromise;
+        }
+
+        async function startVoiceMode() {
+            if (!GPT_KEY) {
+                addMessage('Renseignez votre cle API dans les parametres.', 'avatar');
+                return;
+            }
+            const micBtn = document.getElementById('mic-btn');
+            micBtn.classList.add('connecting');
+            micBtn.innerHTML = '&#8943;';
+            setStatus('Connexion...');
+            try {
+                await ensureRtConnection();
+                micBtn.classList.remove('connecting');
+                micBtn.innerHTML = MIC_SVG;
+                startMicCapture();
+                rtIsVoiceMode = true;
+                micBtn.classList.add('active');
+                document.getElementById('chat-input-container').classList.add('voice-mode');
+                document.getElementById('chat-messages').style.display = 'none';
+                setStatus('Ecoute...');
+                resetSilenceTimer();
             } catch (err) {
                 console.error('Voice mode error:', err);
                 micBtn.classList.remove('connecting');
-                micBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>';
-                addMessage('Erreur: ' + err.message, 'avatar');
+                micBtn.innerHTML = MIC_SVG;
+                addMessage('Erreur connexion: ' + err.message, 'avatar');
+                setStatus('Pret');
             }
         }
 
@@ -1814,11 +1758,14 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
                     break;
 
                 case 'response.audio_transcript.done':
+                    if (!rtIsVoiceMode && rtTranscript) {
+                        addMessage(rtTranscript, 'avatar');
+                    }
                     rtTranscript = '';
                     break;
 
                 case 'response.audio.done':
-                    resetSilenceTimer();
+                    if (rtIsVoiceMode) resetSilenceTimer();
                     playRealtimeAudio();
                     break;
 
@@ -1832,6 +1779,7 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
         function playRealtimeAudio() {
             if (rtAudioChunks.length === 0) {
                 setStatus(rtIsVoiceMode ? 'Ecoute...' : 'Pret');
+                if (_pendingTextResolve) { const r = _pendingTextResolve; _pendingTextResolve = null; r(); }
                 return;
             }
             // Combine base64 chunks → single PCM16 buffer
@@ -1885,6 +1833,7 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
                 isSpeaking = false;
                 setTalking(false);
                 setStatus(rtIsVoiceMode ? 'Ecoute...' : 'Pret');
+                if (_pendingTextResolve) { const r = _pendingTextResolve; _pendingTextResolve = null; r(); }
             };
             audioEl.play();
         }
@@ -1986,10 +1935,7 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
             }
         }
 
-        function escapeXml(str) {
-            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-                      .replace(/"/g, '&quot;').replace(/'/g, '&apos;');
-        }
+        // (escapeXml removed — no longer needed)
 
         // ── Render Loop (capped at 60 FPS via setAnimationLoop) ──
         const _fpsInterval = 1000 / 60;
@@ -2084,18 +2030,9 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
                     const vol = lipsync.features ? (lipsync.features.volume * 100).toFixed(0) : '0';
                     document.getElementById('perf-viseme').textContent = `Viseme: ${v.replace('viseme_','')}`;
                     document.getElementById('perf-volume').textContent = `Volume: ${vol}%`;
-                    const isVoice = rtIsVoiceMode;
-                    document.querySelectorAll('.perf-text-only').forEach(el => el.style.display = isVoice ? 'none' : '');
-                    document.querySelectorAll('.perf-voice-only').forEach(el => el.style.display = isVoice ? '' : 'none');
-                    if (isVoice) {
-                        document.getElementById('perf-rt-latency').textContent = `RT Latency: ${PERF.rtLatencyMs}ms`;
-                        document.getElementById('perf-rt-chunks').textContent = `RT Chunks: ${PERF.rtChunks}`;
-                        document.getElementById('perf-lipsync').textContent = `Lip Delay: ${PERF.lipsyncReadyMs}ms`;
-                    } else {
-                        document.getElementById('perf-gpt').textContent = `GPT: ${PERF.gptMs}ms`;
-                        document.getElementById('perf-tts').textContent = `TTS: ${PERF.ttsMs}ms`;
-                        document.getElementById('perf-lipsync').textContent = `Lip Delay: ${PERF.lipsyncReadyMs}ms`;
-                    }
+                    document.getElementById('perf-rt-latency').textContent = `RT Latency: ${PERF.rtLatencyMs}ms`;
+                    document.getElementById('perf-rt-chunks').textContent = `RT Chunks: ${PERF.rtChunks}`;
+                    document.getElementById('perf-lipsync').textContent = `Lip Delay: ${PERF.lipsyncReadyMs}ms`;
                 }
             }
         }
@@ -2133,24 +2070,49 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
         async function handleSend() {
             const text = chatInput.value.trim();
             if (!text || isSpeaking) return;
-            if (!GPT_KEY || !SPEECH_KEY) {
-                addMessage('Veuillez renseigner vos cles API dans les parametres (roue dentee en haut a gauche).', 'avatar');
+            if (!GPT_KEY) {
+                addMessage('Veuillez renseigner votre cle API dans les parametres (roue dentee en haut a gauche).', 'avatar');
                 return;
             }
             chatInput.value = '';
             addMessage(text, 'user');
             sendBtn.disabled = true;
             _headDriftTarget = 0.0;
-            setStatus('Reflexion...');
+            setStatus('Connexion...');
 
             try {
-                const gptStart = performance.now();
-                const aiReply = await getAIResponse(text);
-                PERF.gptMs = Math.round(performance.now() - gptStart);
-                addMessage(aiReply, 'avatar');
-                const ttsStart = performance.now();
-                await speak(aiReply);
-                PERF.ttsMs = Math.round(performance.now() - ttsStart);
+                PERF.rtSpeechEndTime = performance.now();
+                PERF.rtChunks = 0;
+                await ensureRtConnection();
+                setStatus('Reflexion...');
+
+                rtAudioChunks = [];
+                rtTranscript = '';
+
+                rtWs.send(JSON.stringify({
+                    type: 'conversation.item.create',
+                    item: {
+                        type: 'message',
+                        role: 'user',
+                        content: [{ type: 'input_text', text: text }]
+                    }
+                }));
+
+                rtWs.send(JSON.stringify({
+                    type: 'response.create',
+                    response: { modalities: ['text', 'audio'] }
+                }));
+
+                await new Promise((resolve, reject) => {
+                    _pendingTextResolve = resolve;
+                    setTimeout(() => {
+                        if (_pendingTextResolve === resolve) {
+                            _pendingTextResolve = null;
+                            reject(new Error('Timeout (30s)'));
+                        }
+                    }, 30000);
+                });
+
             } catch (err) {
                 console.error('Chat error:', err);
                 addMessage('Oups, erreur: ' + err.message, 'avatar');
@@ -2230,29 +2192,19 @@ Tu peux taquiner gentiment, faire des blagues, et etre spontane. Reponds toujour
 
         // ── API key inputs ──
         function updateApiKeyStatus() {
-            const speechEl = document.getElementById('status-speech-key');
             const gptEl = document.getElementById('status-gpt-key');
-            if (SPEECH_KEY) { speechEl.textContent = '\u2713'; speechEl.className = 'api-status ok'; }
-            else { speechEl.innerHTML = '&#10007;'; speechEl.className = 'api-status missing'; }
             if (GPT_KEY) { gptEl.textContent = '\u2713'; gptEl.className = 'api-status ok'; }
             else { gptEl.innerHTML = '&#10007;'; gptEl.className = 'api-status missing'; }
         }
 
-        const inputSpeechKey = document.getElementById('input-speech-key');
         const inputGptKey = document.getElementById('input-gpt-key');
         const selectRtVoice = document.getElementById('select-rt-voice');
         const selectRtLang = document.getElementById('select-rt-lang');
-        inputSpeechKey.value = SPEECH_KEY;
         inputGptKey.value = GPT_KEY;
         selectRtVoice.value = RT_VOICE;
         selectRtLang.value = RT_LANG;
         updateApiKeyStatus();
 
-        inputSpeechKey.addEventListener('input', () => {
-            SPEECH_KEY = inputSpeechKey.value.trim();
-            localStorage.setItem('avatar_speech_key', SPEECH_KEY);
-            updateApiKeyStatus();
-        });
         inputGptKey.addEventListener('input', () => {
             GPT_KEY = inputGptKey.value.trim();
             localStorage.setItem('avatar_gpt_key', GPT_KEY);
