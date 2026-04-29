@@ -832,8 +832,8 @@
         let GPT_KEY = localStorage.getItem('avatar_gpt_key') || '';
 
         // ── Azure OpenAI Realtime (gpt-realtime-1.5) Config ──
-        const RT_DEPLOYMENT = 'gpt-realtime-1.5';
-        const RT_WS_BASE = 'wss://johann-api-resource.cognitiveservices.azure.com/openai/realtime';
+        const RT_DEPLOYMENT = 'gpt-realtime-1.5-avatar-3D';
+        const RT_WS_BASE = 'wss://infan-mnisj43h-swedencentral.cognitiveservices.azure.com/openai/realtime';
         let RT_VOICE = localStorage.getItem('avatar_rt_voice') || TUNING_DEFAULTS.rtVoice || 'echo';
         let RT_LANG = localStorage.getItem('avatar_rt_lang') || TUNING_DEFAULTS.rtLang || 'fr';
         const RT_INSTRUCTIONS = {
